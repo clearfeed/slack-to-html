@@ -99,30 +99,30 @@ describe('markdown', () => {
   })
 
   describe('block quote', () => {
-    it('should leave it alone if the block quote delimiter is preceded by non-whitespace content', () => {
-      escapeForSlackWithMarkdown('this is not whitespace &gt;&gt;&gt;this is a block quote').should.equal('this is not whitespace &gt;&gt;&gt;this is a block quote');
+    it('should render an element if the block quote delimiter is preceded by non-whitespace content', () => {
+      escapeForSlackWithMarkdown('this is not whitespace &gt;&gt;&gt;this is a block quote').should.equal('this is not whitespace <blockquote>this is a block quote</blockquote>');
     })
 
     it('should render an element', () => {
-      escapeForSlackWithMarkdown('&gt;&gt;&gt;this is a block quote').should.equal('<div class="slack_block">this is a block quote</div>')
+      escapeForSlackWithMarkdown('&gt;&gt;&gt;this is a block quote').should.equal('<blockquote>this is a block quote</blockquote>')
     })
 
     it('should replace newlines', () => {
-      escapeForSlackWithMarkdown('&gt;&gt;&gt;this is a block quote\nwith newlines').should.equal('<div class="slack_block">this is a block quote<br>with newlines</div>')
+      escapeForSlackWithMarkdown('&gt;&gt;&gt;this is a block quote\nwith newlines').should.equal('<blockquote>this is a block quote<br>with newlines</blockquote>')
     })
   })
 
   describe('inline quote', () => {
-    it('should leave it alone if the quote delimiter is preceded by non-whitespace content', () => {
-      escapeForSlackWithMarkdown('this is not whitespace &gt;inline quote').should.equal('this is not whitespace &gt;inline quote');
+    it('should render an element if the quote delimiter is preceded by non-whitespace content', () => {
+      escapeForSlackWithMarkdown('this is not whitespace <blockquote>inline quote</blockquote>').should.equal('this is not whitespace <blockquote>inline quote</blockquote>');
     })
 
     it('should render an element if the quote delimiter begins the line', () => {
-      escapeForSlackWithMarkdown('&gt;inline quote').should.equal('<span class="slack_block">inline quote</span>')
+      escapeForSlackWithMarkdown('&gt;inline quote').should.equal('<blockquote>inline quote</blockquote>')
     })
 
     it('should render an element if the quote delimiter is preceded only by whitespace', () => {
-      escapeForSlackWithMarkdown('  \t   &gt;inline quote').should.equal('<span class="slack_block">inline quote</span>')
+      escapeForSlackWithMarkdown('  \t   &gt;inline quote').should.equal('  \t   <blockquote>inline quote</blockquote>')
     })
   })
 })
