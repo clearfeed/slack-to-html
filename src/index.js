@@ -411,7 +411,15 @@ const expandText = (text) => {
     blockquoteOpeningPatternString,
     blockquoteClosingPatternString,
     expandedTextAndWindows.windows,
-    { endingPattern: '\\n|$', maxReplacements: 100, spacePadded: false }
+    { endingPattern: '\\n\\n', maxReplacements: 100 }
+  )
+  expandedTextAndWindows = replaceInWindows(
+    expandedTextAndWindows.text,
+    '&gt;',
+    blockquoteOpeningPatternString,
+    blockquoteClosingPatternString,
+    expandedTextAndWindows.windows,
+    { endingPattern: '$', maxReplacements: 100 }
   )
 
   return expandedTextAndWindows.text
