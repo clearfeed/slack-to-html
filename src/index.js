@@ -405,13 +405,20 @@ const expandText = (text) => {
       maxReplacements: 100,
     }
   )
+  /*
+   * while keeping the ending pattern as '\\n|$'.
+   * any text provided after the blockquote was also getting wrapped in it.
+   * in order to avoid that it was divided into a 2 step process.
+   *  - 1 For the blockquotes which have sentences after them.
+   *  - 2 For the blockquotes which are provided at the end of the string.
+   */
   expandedTextAndWindows = replaceInWindows(
     expandedTextAndWindows.text,
     '&gt;',
     blockquoteOpeningPatternString,
     blockquoteClosingPatternString,
     expandedTextAndWindows.windows,
-    { endingPattern: '\\n\\n', maxReplacements: 100 }
+    { endingPattern: '\\n', maxReplacements: 100 }
   )
   expandedTextAndWindows = replaceInWindows(
     expandedTextAndWindows.text,
