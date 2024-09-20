@@ -47,6 +47,10 @@ const italicOpeningPatternString = '<em class="slack_italics">'
 const italicClosingPatternString = '</em>'
 const blockquoteOpeningPatternString = '<blockquote>'
 const blockquoteClosingPatternString = '</blockquote>'
+const listOpeningPatternString = '<ol>1.'
+const listClosingPatternString = '\n</ol>'
+const listItemOpeningPatternString = '<li>'
+const listItemClosingPatternString = '</li> '
 const lineBreakTagLiteral = '<br>'
 const newlineRegExp = XRegExp.cache('\\n', 'nsg')
 const whitespaceRegExp = XRegExp.cache('\\s', 'ns')
@@ -420,6 +424,38 @@ const expandText = (text) => {
     blockquoteClosingPatternString,
     expandedTextAndWindows.windows,
     { endingPattern: '$', maxReplacements: 100 }
+  )
+  /*
+   * List Parsing (Done in 3 steps:):-
+   * - first we are setting up the `<ol>` tags by identifying the first point 1.
+   * ---- here the pattern observed is either "1." at the begining or after a paragraphg i.e. "\n\n" as prefix.
+   * - then once setup with <ol> tags, we are wraping each point with <li></li> tags. (this step is done twice)
+   * ---- there was a discrepancy happening where the <li> tags were getting placed only for the alternative lines.
+   * ---- so, executed this action 2 times to cover all the lines.
+   */
+  expandedTextAndWindows = replaceInWindows(
+    expandedTextAndWindows.text,
+    '.',
+    listOpeningPatternString,
+    listClosingPatternString,
+    expandedTextAndWindows.windows,
+    { prefixPattern: '\\n1|^1', endingPattern: '\\n\\n|$', maxReplacements: 100 }
+  )
+  expandedTextAndWindows = replaceInWindows(
+    expandedTextAndWindows.text,
+    '.',
+    listItemOpeningPatternString,
+    listItemClosingPatternString,
+    expandedTextAndWindows.windows,
+    { prefixPattern: '\\d+', maxReplacements: 100, endingPattern: '\\n' }
+  )
+  expandedTextAndWindows = replaceInWindows(
+    expandedTextAndWindows.text,
+    '.',
+    listItemOpeningPatternString,
+    listItemClosingPatternString,
+    expandedTextAndWindows.windows,
+    { prefixPattern: '\\d+', endingPattern: '\\n' }
   )
 
   return expandedTextAndWindows.text
