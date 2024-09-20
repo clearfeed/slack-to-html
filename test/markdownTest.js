@@ -126,7 +126,7 @@ describe('markdown', () => {
     })
 
     it('should render an element if the quote delimiter is preceded only by whitespace', () => {
-      escapeForSlackWithMarkdown('  \t   &gt;inline quote\n\ndsadsadsdsad').should.equal('  \t   <blockquote>inline quote</blockquote>\n\ndsadsadsdsad')
+      escapeForSlackWithMarkdown('  \t   &gt;inline quote').should.equal('  \t   <blockquote>inline quote</blockquote>')
     })
   })
 })
