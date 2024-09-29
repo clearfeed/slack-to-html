@@ -46,7 +46,8 @@ const strikethroughClosingPatternString = '</s>'
 const italicOpeningPatternString = '<em class="slack_italics">'
 const italicClosingPatternString = '</em>'
 const blockDivOpeningPatternString = '<div class="slack_block">'
-const blockSpanOpeningPatternString = '<span class="slack_block">'
+const blockSpanOpeningPatternString = '<blockquote class="slack_block">'
+const blockSpanClosingPatternString = '</blockquote>'
 const lineBreakTagLiteral = '<br>'
 const newlineRegExp = XRegExp.cache('\\n', 'nsg')
 const whitespaceRegExp = XRegExp.cache('\\s', 'ns')
@@ -350,6 +351,37 @@ const replaceInWindows = (
   )
 }
 
+/**
+ * Custom logic for blockquotes is required because:
+ * 1. Blockquotes can span multiple lines
+ * 2. Each line of a blockquote starts with '>' (represented as '&gt;' in HTML)
+ * 3. We need to wrap each blockquote line individually, rather than the entire block
+ * 4. The existing replaceInWindows function doesn't handle this multi-line scenario well
+ */
+const replaceBlockQuotes = (text) => {
+  const lines = text.split('\n')
+
+  const processedLines = lines.map((line) => {
+    if (line.trim().startsWith('&gt;')) {
+      return replaceInWindows(
+        line,
+        '&gt;',
+        blockSpanOpeningPatternString,
+        blockSpanClosingPatternString,
+        [[0, line.length]],
+        {
+          prefixPattern: '^\\s*',
+          endingPattern: '\\n|$',
+          maxReplacements: 1,
+        }
+      ).text
+    }
+    return line
+  })
+
+  return processedLines.join('')
+}
+
 const expandText = (text) => {
   let expandedTextAndWindows
   expandedTextAndWindows = { text: text, windows: [[0, text.length]] }
@@ -406,16 +438,8 @@ const expandText = (text) => {
       maxReplacements: 100,
     }
   )
-  expandedTextAndWindows = replaceInWindows(
-    expandedTextAndWindows.text,
-    '&gt;',
-    blockSpanOpeningPatternString,
-    closingSpanPatternString,
-    expandedTextAndWindows.windows,
-    { prefixPattern: '^\\s*', endingPattern: '\\n|$', maxReplacements: 100 }
-  )
 
-  return expandedTextAndWindows.text
+  return replaceBlockQuotes(expandedTextAndWindows.text)
 }
 
 const encodeSlackMrkdwnCharactersInLinks = (link) => XRegExp.replace(link, slackMrkdwnCharactersRegExp, (match) => slackMrkdwnPercentageCharsMap[match.mrkdwnCharacter] || match.mrkdwnCharacter)

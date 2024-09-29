@@ -118,11 +118,15 @@ describe('markdown', () => {
     })
 
     it('should render an element if the quote delimiter begins the line', () => {
-      escapeForSlackWithMarkdown('&gt;inline quote').should.equal('<span class="slack_block">inline quote</span>')
+      escapeForSlackWithMarkdown('&gt;inline quote').should.equal('<blockquote class="slack_block">inline quote</blockquote>')
     })
 
     it('should render an element if the quote delimiter is preceded only by whitespace', () => {
-      escapeForSlackWithMarkdown('  \t   &gt;inline quote').should.equal('<span class="slack_block">inline quote</span>')
+      escapeForSlackWithMarkdown('  \t   &gt;inline quote').should.equal('<blockquote class="slack_block">inline quote</blockquote>')
+    })
+
+    it('should render an element if the multiple single line quotes in string', () => {
+      escapeForSlackWithMarkdown('&gt;inline quote\n&gt;inline quote').should.equal('<blockquote class="slack_block">inline quote</blockquote><blockquote class="slack_block">inline quote</blockquote>')
     })
   })
 })
