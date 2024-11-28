@@ -125,12 +125,20 @@ describe('markdown', () => {
       escapeForSlackWithMarkdown('  \t   &gt;inline quote').should.equal('<blockquote class="slack_block">inline quote</blockquote>')
     })
 
-    it('should render an element if the multiple single line quotes in string', () => {
-      escapeForSlackWithMarkdown('&gt;inline quote\n&gt;inline quote').should.equal('<blockquote class="slack_block">inline quote</blockquote><blockquote class="slack_block">inline quote</blockquote>')
-    })
+    it("should render an element if the multiple single line quotes in string", () => {
+      escapeForSlackWithMarkdown(
+        "&gt;inline quote\n&gt;inline quote"
+      ).should.equal(
+        '<blockquote class="slack_block">inline quote</blockquote>\n<blockquote class="slack_block">inline quote</blockquote>'
+      );
+    });
 
-    it('should render an element with multiple multiline quotes in string', () => {
-      escapeForSlackWithMarkdown('&gt; Multiline Quote 1 Line 1\n&gt; Multiline Quote 1 Line 2\nNo quote\n&gt; Multiline Quote 2 Line 1\n&gt; Multiline Quote 2 Line 2\nNo Quote\n&gt; Multiline Quote 3 Line 1\n&gt; Multiline Quote 3 Line 2\n').should.equal('<blockquote class="slack_block"> Multiline Quote 1 Line 1</blockquote><blockquote class="slack_block"> Multiline Quote 1 Line 2</blockquote>No quote<blockquote class="slack_block"> Multiline Quote 2 Line 1</blockquote><blockquote class="slack_block"> Multiline Quote 2 Line 2</blockquote>No Quote<blockquote class="slack_block"> Multiline Quote 3 Line 1</blockquote><blockquote class="slack_block"> Multiline Quote 3 Line 2</blockquote>');
+    it("should render an element with multiple multiline quotes in string", () => {
+      escapeForSlackWithMarkdown(
+        "&gt; Multiline Quote 1 Line 1\n&gt; Multiline Quote 1 Line 2\nNo quote\n&gt; Multiline Quote 2 Line 1\n&gt; Multiline Quote 2 Line 2\nNo Quote\n&gt; Multiline Quote 3 Line 1\n&gt; Multiline Quote 3 Line 2\n"
+      ).should.equal(
+        '<blockquote class="slack_block"> Multiline Quote 1 Line 1</blockquote>\n<blockquote class="slack_block"> Multiline Quote 1 Line 2</blockquote>\nNo quote\n<blockquote class="slack_block"> Multiline Quote 2 Line 1</blockquote>\n<blockquote class="slack_block"> Multiline Quote 2 Line 2</blockquote>\nNo Quote\n<blockquote class="slack_block"> Multiline Quote 3 Line 1</blockquote>\n<blockquote class="slack_block"> Multiline Quote 3 Line 2</blockquote>\n'
+      );
     });
   })
 })

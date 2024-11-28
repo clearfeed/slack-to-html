@@ -379,7 +379,7 @@ const replaceBlockQuotes = (text) => {
     return line
   })
 
-  return processedLines.join('')
+  return processedLines.join('\n')
 }
 
 const expandText = (text) => {
