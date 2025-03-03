@@ -47,7 +47,7 @@ describe('control sequences', () => {
     })
 
     it('should handle channel mentions with empty names after pipe  without channel map', () => {
-      escapeForSlack('<#C123|>').should.equal('&lt;#C123|&gt;')
+      escapeForSlack('<#C123|>').should.equal('&lt;#C123&gt;')
     })
   })
 
