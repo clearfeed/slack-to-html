@@ -65,7 +65,7 @@ const userMentionRegExp = XRegExp.cache(
   'ng'
 )
 const channelMentionRegExp = XRegExp.cache(
-  '<#(((?<channelID>C[^|>]+)(\\|(?<channelName>[^>]+))?)|(?<channelNameWithoutID>[^>]+))>',
+  '<#(((?<channelID>C[^|>]+)(\\|(?<channelName>[^>]*)?)?)|(?<channelNameWithoutID>[^>]+))>',
   'ng'
 )
 const linkRegExp = XRegExp.cache(
