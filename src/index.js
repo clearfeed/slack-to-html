@@ -112,7 +112,7 @@ const replaceChannelName = (channels) => (match) => {
   if (channelName) {
     return `#${channelName}`
   }
-  return escapeTags(match.toString())
+  return escapeTags(`<#${match.channelID}>`)
 }
 
 const replaceUserGroupName = (usergroups) => (match) => {
