@@ -65,7 +65,7 @@ const userMentionRegExp = XRegExp.cache(
   'ng'
 )
 const channelMentionRegExp = XRegExp.cache(
-  '<#(((?<channelID>C[^|>]+)(\\|(?<channelName>[^>]+))?)|(?<channelNameWithoutID>[^>]+))>',
+  '<#(((?<channelID>C[^|>]+)(\\|(?<channelName>[^>]*))?)|(?<channelNameWithoutID>[^>]+))>',
   'ng'
 )
 const linkRegExp = XRegExp.cache(
@@ -112,7 +112,7 @@ const replaceChannelName = (channels) => (match) => {
   if (channelName) {
     return `#${channelName}`
   }
-  return escapeTags(match.toString())
+  return escapeTags(match.channelID ? `<#${match.channelID}>` : match.toString())
 }
 
 const replaceUserGroupName = (usergroups) => (match) => {

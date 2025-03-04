@@ -41,6 +41,14 @@ describe('control sequences', () => {
     it('should render the channel literal', () => {
       escapeForSlack('<#channel>').should.equal('#channel')
     })
+
+    it('should handle channel mentions with empty names after pipe', () => {
+      escapeForSlack('<#C123|>', { channels: { C123: 'channel' } }).should.equal('#channel')
+    })
+
+    it('should handle channel mentions with empty names after pipe without channel map', () => {
+      escapeForSlack('<#C123|>').should.equal('&lt;#C123&gt;')
+    })
   })
 
   describe('hyperlinks', () => {
