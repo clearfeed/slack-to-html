@@ -25,7 +25,7 @@ const expandEmoji = (text, customEmoji) => {
 
       const emojiHtml = emojiValue
         .split('-')
-        .map((emojiCode) => `&#x${emojiCode}`)
+        .map((emojiCode) => `&#x${emojiCode};`)
         .join('')
       return `<span title=":${originalKey}:">${emojiHtml}</span>`
     }
