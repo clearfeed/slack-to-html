@@ -132,7 +132,7 @@ const buildOpeningDelimiterRegExp = (
   const escapedDelimiter = escapeDelimiter
     ? XRegExp.escape(delimiter)
     : delimiter
-  const prefixRegexPart = spacePadded ? '(?<openingCapturedWhitespace>^|\\s|["\'])' : ''
+  const prefixRegexPart = spacePadded ? '(?<openingCapturedWhitespace>^|\\s|["\']|:|\\.)' : ''
   return XRegExp.cache(
     `${prefixRegexPart}${prefixPattern}${escapedDelimiter}`,
     'ns'
@@ -148,7 +148,7 @@ const buildClosingDelimiterRegExp = (
   const escapedDelimiter = escapeDelimiter
     ? XRegExp.escape(delimiter)
     : delimiter
-  const suffixRegexPart = spacePadded ? '(?<closingCapturedWhitespace>\\s|["\']|$)' : ''
+  const suffixRegexPart = spacePadded ? '(?<closingCapturedWhitespace>\\s|["\']|:|\\.|$)' : ''
   return XRegExp.cache(
     `${escapedDelimiter}${suffixRegexPart}`,
     'ns'
