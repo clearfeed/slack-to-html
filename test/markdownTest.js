@@ -167,4 +167,17 @@ describe('markdown', () => {
       );
     });
   })
+
+  it("should convert the url to a clickable link with correct url and text", () => {
+    escapeForSlackWithMarkdown(
+     `<http://s3://somes3yrl.env|ftp://user:password@server/pathname>`
+    ).should.equal(
+      '<a href="http://s3://somes3yrl.env" target="_blank" rel="noopener noreferrer">ftp://user:password@server/pathname</a>'
+    );
+  });
 })
+
+
+
+
+  
