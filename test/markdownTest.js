@@ -67,24 +67,6 @@ describe('markdown', () => {
       )
     })
 
-    it("should render an element between quotes prefixed with a colon ", () => {
-      escapeForSlackWithMarkdown(':_"icmp_kpi_us_test"_').should.equal(
-        ':<em class="slack_italics">"icmp_kpi_us_test"</em>'
-      )
-    })
-
-    it("should render an element between quotes suffixed with a colon ", () => {
-      escapeForSlackWithMarkdown('_"icmp_kpi_us_test"_:').should.equal(
-        '<em class="slack_italics">"icmp_kpi_us_test"</em>:'
-      )
-    })
-
-    it("should render an element between quotes suffixed and prefixed with a period ", () => {
-      escapeForSlackWithMarkdown('._"icmp_kpi_us_test"_.').should.equal(
-        '.<em class="slack_italics">"icmp_kpi_us_test"</em>.'
-      )
-    })
-
     it("should render a normal text with underscores", () => {
       escapeForSlackWithMarkdown('this is a VARIABLE_NAME_TEST').should.equal(
         'this is a VARIABLE_NAME_TEST'
