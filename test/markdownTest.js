@@ -141,4 +141,30 @@ describe('markdown', () => {
       );
     });
   })
+
+  describe('URL links', () => {
+    it("should convert S3 URLs to clickable links", () => {
+      escapeForSlackWithMarkdown(
+        `<s3://bucket-name/path/to/file.txt> test`
+      ).should.equal(
+        '<a href="s3://bucket-name/path/to/file.txt" target="_blank" rel="noopener noreferrer">s3://bucket-name/path/to/file.txt</a> test'
+      );
+    });
+
+    it("should convert FTP URLs to clickable links", () => {
+      escapeForSlackWithMarkdown(
+        `<ftp://example.com/path/to/file.txt> test`
+      ).should.equal(
+        '<a href="ftp://example.com/path/to/file.txt" target="_blank" rel="noopener noreferrer">ftp://example.com/path/to/file.txt</a> test'
+      );
+    });
+
+    it("should convert HTTP URLs to clickable links", () => {
+      escapeForSlackWithMarkdown(
+        `<http://example.com/path/to/page.html> test`
+      ).should.equal(
+        '<a href="http://example.com/path/to/page.html" target="_blank" rel="noopener noreferrer">http://example.com/path/to/page.html</a> test'
+      );
+    });
+  })
 })

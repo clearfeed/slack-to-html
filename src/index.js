@@ -69,7 +69,7 @@ const channelMentionRegExp = XRegExp.cache(
   'ng'
 )
 const linkRegExp = XRegExp.cache(
-  '<(?<linkUrl>https?:[^|>]+)(\\|(?<linkHtml>[^>]+))?>',
+  '<(?<linkUrl>(https?|s3|ftp):[^|>]+)(\\|(?<linkHtml>[^>]+))?>',
   'ng'
 )
 const mailToRegExp = XRegExp.cache(
