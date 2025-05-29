@@ -170,6 +170,14 @@ describe('markdown', () => {
 
   it("should convert the url to a clickable link with correct url and text", () => {
     escapeForSlackWithMarkdown(
+     `<ftp://user:password@server/pathname|click here>`
+    ).should.equal(
+      '<a href="ftp://user:password@server/pathname" target="_blank" rel="noopener noreferrer">click here</a>'
+    );
+  });
+
+  it("should convert the url to a clickable link with correct url and text edge case ", () => {
+    escapeForSlackWithMarkdown(
      `<http://s3://somes3yrl.env|ftp://user:password@server/pathname>`
     ).should.equal(
       '<a href="http://s3://somes3yrl.env" target="_blank" rel="noopener noreferrer">ftp://user:password@server/pathname</a>'
