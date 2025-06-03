@@ -287,6 +287,27 @@ const replaceInWindows = (
           )
         : textBetweenDelimiters
 
+      const isItalics = delimiterLiteral === '_' && options.spacePadded
+      if (isItalics) {
+        /**
+         * If there is an isolated underscore, then we don't want to replace
+         * it with empty <em> tags and keep them as is
+         */
+        if (!/[^\s_]/.test(textBetweenDelimiters)) {
+          // Skip this match, move to next
+          return replaceInWindows(
+            text,
+            delimiterLiteral,
+            replacementOpeningLiteral,
+            replacementClosingLiteral,
+            closedTagWindows,
+            options,
+            tagWindowIndex,
+            tagWindowOffset + openingMatch[0].length
+          )
+        }
+      }
+
       const replacedDelimiterText = [
         openingReplacementString,
         replacedTextBetweenDelimiters,
