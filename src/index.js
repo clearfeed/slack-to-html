@@ -279,13 +279,6 @@ const replaceInWindows = (
         openingMatch.index + openingMatch[0].length,
         closingMatch.index
       )
-      const replacedTextBetweenDelimiters = replaceNewlines
-        ? XRegExp.replace(
-            textBetweenDelimiters,
-            newlineRegExp,
-            lineBreakTagLiteral
-          )
-        : textBetweenDelimiters
 
       if (textBetweenDelimiters.length === 0) {
         /**
@@ -304,6 +297,14 @@ const replaceInWindows = (
           tagWindowOffset + openingMatch[0].length
         )
       }
+
+      const replacedTextBetweenDelimiters = replaceNewlines
+        ? XRegExp.replace(
+            textBetweenDelimiters,
+            newlineRegExp,
+            lineBreakTagLiteral
+          )
+        : textBetweenDelimiters
 
       const replacedDelimiterText = [
         openingReplacementString,
