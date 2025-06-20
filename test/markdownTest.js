@@ -78,6 +78,12 @@ describe('markdown', () => {
        '"TEST_MESSAGE_TEST <em class="slack_italics">italic</em>"'
       )
     })
+
+    it("should render spaced out underscores as normal text", () => {
+      escapeForSlackWithMarkdown('why _ would _ you _ do _ this? _ _italic_').should.equal(
+        'why _ would _ you _ do _ this? _ <em class="slack_italics">italic</em>'
+      )
+    })
   })
 
   describe('strikethrough', () => {

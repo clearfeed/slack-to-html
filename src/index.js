@@ -279,6 +279,25 @@ const replaceInWindows = (
         openingMatch.index + openingMatch[0].length,
         closingMatch.index
       )
+
+      if (textBetweenDelimiters.length === 0) {
+        /**
+         * If there is an isolated delimiter, then we don't want to replace
+         * it with a corresponding opening and closing tag as we want to
+         * keep it as is.
+         */
+        return replaceInWindows(
+          text,
+          delimiterLiteral,
+          replacementOpeningLiteral,
+          replacementClosingLiteral,
+          closedTagWindows,
+          options,
+          tagWindowIndex,
+          tagWindowOffset + openingMatch[0].length
+        )
+      }
+
       const replacedTextBetweenDelimiters = replaceNewlines
         ? XRegExp.replace(
             textBetweenDelimiters,
