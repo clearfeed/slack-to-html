@@ -464,7 +464,7 @@ const expandText = (text) => {
     }
   )
 
-  return replaceBlockQuotes(replaceParagraphBreaks(expandedTextAndWindows.text))
+  return replaceParagraphBreaks(replaceBlockQuotes(expandedTextAndWindows.text))
 }
 
 const encodeSlackMrkdwnCharactersInLinks = (link) => XRegExp.replace(link, slackMrkdwnCharactersRegExp, (match) => slackMrkdwnPercentageCharsMap[match.mrkdwnCharacter] || match.mrkdwnCharacter)

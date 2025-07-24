@@ -197,6 +197,14 @@ describe('markdown', () => {
       'paragraph 1<span class="slack_line_break"></span>paragraph 2'
     );
   });
+
+  it("should correctly handle paragraph breaks between blockquotes", () => {
+    escapeForSlackWithMarkdown(
+      "&gt; line 1\n\n&gt; line 2"
+    ).should.equal(
+      '<blockquote class="slack_block"> line 1</blockquote><span class="slack_line_break"></span><blockquote class="slack_block"> line 2</blockquote>'
+    );
+  });
 })
 
 
