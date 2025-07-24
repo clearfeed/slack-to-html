@@ -190,11 +190,11 @@ describe('markdown', () => {
     );
   });
 
-  it("should convert the paragraph breaks to slack paragraph breaks", () => {
+  it("should convert the paragraph breaks to slack line breaks", () => {
     escapeForSlackWithMarkdown(
      `paragraph 1\n\nparagraph 2`
     ).should.equal(
-      'paragraph 1<span class="slack_paragraph_break"></span>paragraph 2'
+      'paragraph 1<span class="slack_line_break"></span>paragraph 2'
     );
   });
 })

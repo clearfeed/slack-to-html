@@ -49,7 +49,7 @@ const blockDivOpeningPatternString = '<div class="slack_block">'
 const blockSpanOpeningPatternString = '<blockquote class="slack_block">'
 const blockSpanClosingPatternString = '</blockquote>'
 const paragraphBreak = XRegExp.cache('\\n\\n', 'nsg')
-const paragraphBreakTagLiteral = '<span class="slack_paragraph_break"></span>'
+const paragraphBreakTagLiteral = '<span class="slack_line_break"></span>'
 const lineBreakTagLiteral = '<br>'
 const newlineRegExp = XRegExp.cache('\\n', 'nsg')
 const whitespaceRegExp = XRegExp.cache('\\s', 'ns')
