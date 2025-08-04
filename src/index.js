@@ -48,6 +48,8 @@ const italicClosingPatternString = '</em>'
 const blockDivOpeningPatternString = '<div class="slack_block">'
 const blockSpanOpeningPatternString = '<blockquote class="slack_block">'
 const blockSpanClosingPatternString = '</blockquote>'
+const paragraphBreak = XRegExp.cache('\\n\\n', 'nsg')
+const paragraphBreakTagLiteral = '<div class="slack_line_break"></div>'
 const lineBreakTagLiteral = '<br>'
 const newlineRegExp = XRegExp.cache('\\n', 'nsg')
 const whitespaceRegExp = XRegExp.cache('\\s', 'ns')
@@ -370,6 +372,10 @@ const replaceInWindows = (
   )
 }
 
+const replaceParagraphBreaks = (text) => {
+  return XRegExp.replace(text, paragraphBreak, paragraphBreakTagLiteral)
+}
+
 /**
  * Custom logic for blockquotes is required because:
  * 1. Blockquotes can span multiple lines
@@ -458,7 +464,7 @@ const expandText = (text) => {
     }
   )
 
-  return replaceBlockQuotes(expandedTextAndWindows.text)
+  return replaceParagraphBreaks(replaceBlockQuotes(expandedTextAndWindows.text))
 }
 
 const encodeSlackMrkdwnCharactersInLinks = (link) => XRegExp.replace(link, slackMrkdwnCharactersRegExp, (match) => slackMrkdwnPercentageCharsMap[match.mrkdwnCharacter] || match.mrkdwnCharacter)

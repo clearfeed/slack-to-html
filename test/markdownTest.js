@@ -189,6 +189,18 @@ describe('markdown', () => {
       '<a href="http://s3://somes3yrl.env" target="_blank" rel="noopener noreferrer">ftp://user:password@server/pathname</a>'
     );
   });
+
+  it("should convert the paragraph breaks to slack line breaks", () => {
+    escapeForSlackWithMarkdown(`paragraph 1\n\nparagraph 2`).should.equal(
+      'paragraph 1<div class="slack_line_break"></div>paragraph 2'
+    );
+  });
+
+  it("should correctly handle paragraph breaks between blockquotes", () => {
+    escapeForSlackWithMarkdown("&gt; line 1\n\n&gt; line 2").should.equal(
+      '<blockquote class="slack_block"> line 1</blockquote><div class="slack_line_break"></div><blockquote class="slack_block"> line 2</blockquote>'
+    );
+  });
 })
 
 
