@@ -3,7 +3,7 @@ import emoji from './emoji'
 
 /* eslint-disable no-template-curly-in-string */
 
-const expandEmoji = (text, customEmoji, skipEmojiSpans = false) => {
+const expandEmoji = (text, customEmoji = {}, skipEmojiSpans = false) => {
   const allEmoji = Object.assign({}, emoji, customEmoji)
   return text.replace(/:(\S+?):/g, (match, originalKey) => {
     const aliasPattern = /alias:(\S+)/
