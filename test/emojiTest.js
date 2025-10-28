@@ -30,4 +30,30 @@ describe('emoji', () => {
       escapeForSlack(':swiftype::goodbye:', { customEmoji }).should.equal('<img alt="swiftype" src="https://swiftype.com/favicon.ico" title=":swiftype:" class="slack_emoji" /><span title=":goodbye:">&#x1F44B;</span>')
     })
   })
+
+  describe('skipEmojiSpans option', () => {
+    it('should skip span wrapper when skipEmojiSpans is true', () => {
+      escapeForSlack(':wave:', { skipEmojiSpans: true }).should.equal('&#x1F44B;')
+    })
+
+    it('should skip span wrapper for multiple emojis', () => {
+      escapeForSlack(':wave: :wave:', { skipEmojiSpans: true }).should.equal('&#x1F44B; &#x1F44B;')
+      escapeForSlack(':wave::wave:', { skipEmojiSpans: true }).should.equal('&#x1F44B;&#x1F44B;')
+    })
+
+    it('should include span wrapper by default (backward compatibility)', () => {
+      escapeForSlack(':wave:').should.equal('<span title=":wave:">&#x1F44B;</span>')
+      escapeForSlack(':wave:', { skipEmojiSpans: false }).should.equal('<span title=":wave:">&#x1F44B;</span>')
+    })
+
+    it('should skip span wrapper for aliased emoji when skipEmojiSpans is true', () => {
+      escapeForSlack(':goodbye:', { customEmoji: { goodbye: 'alias:wave' }, skipEmojiSpans: true }).should.equal('&#x1F44B;')
+    })
+
+    it('should still render img tags for custom emoji URLs regardless of skipEmojiSpans', () => {
+      // Custom emoji with URLs should always render as img tags
+      escapeForSlack(':swiftype:', { customEmoji: { swiftype: 'https://swiftype.com/favicon.ico' }, skipEmojiSpans: true })
+        .should.equal('<img alt="swiftype" src="https://swiftype.com/favicon.ico" title=":swiftype:" class="slack_emoji" />')
+    })
+  })
 })

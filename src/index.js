@@ -3,7 +3,7 @@ import emoji from './emoji'
 
 /* eslint-disable no-template-curly-in-string */
 
-const expandEmoji = (text, customEmoji) => {
+const expandEmoji = (text, customEmoji, skipEmojiSpans = false) => {
   const allEmoji = Object.assign({}, emoji, customEmoji)
   return text.replace(/:(\S+?):/g, (match, originalKey) => {
     const aliasPattern = /alias:(\S+)/
@@ -27,6 +27,11 @@ const expandEmoji = (text, customEmoji) => {
         .split('-')
         .map((emojiCode) => `&#x${emojiCode};`)
         .join('')
+
+      // If skipEmojiSpans is true, return just the unicode emoji without span wrapper
+      if (skipEmojiSpans) {
+        return emojiHtml
+      }
       return `<span title=":${originalKey}:">${emojiHtml}</span>`
     }
     return match // if emoji not found then return original
@@ -474,6 +479,7 @@ const escapeForSlack = (text, options = {}) => {
   const channels = options.channels || {}
   const usergroups = options.usergroups || {}
   const markdown = options.markdown || false
+  const skipEmojiSpans = options.skipEmojiSpans || false
   /** Links can contain characters such as *_&~` that are a part of the character set used by
    * Slack Mrkdwn so before converting slack mrkdwn to html we need to encode these characters
   */
@@ -522,7 +528,8 @@ const escapeForSlack = (text, options = {}) => {
         },
       ],
     ]),
-    customEmoji
+    customEmoji,
+    skipEmojiSpans
   )
 }
 
