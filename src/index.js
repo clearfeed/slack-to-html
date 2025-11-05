@@ -412,7 +412,7 @@ const replaceBlockQuotes = (text) => {
   return processedLines.join('\n')
 }
 
-const expandText = (text) => {
+const expandText = (text, skipParagraphBreaks = false) => {
   let expandedTextAndWindows
   expandedTextAndWindows = { text: text, windows: [[0, text.length]] }
   expandedTextAndWindows = replaceInWindows(
@@ -469,7 +469,8 @@ const expandText = (text) => {
     }
   )
 
-  return replaceParagraphBreaks(replaceBlockQuotes(expandedTextAndWindows.text))
+  const processedText = replaceBlockQuotes(expandedTextAndWindows.text)
+  return skipParagraphBreaks ? processedText : replaceParagraphBreaks(processedText)
 }
 
 const encodeSlackMrkdwnCharactersInLinks = (link) => XRegExp.replace(link, slackMrkdwnCharactersRegExp, (match) => slackMrkdwnPercentageCharsMap[match.mrkdwnCharacter] || match.mrkdwnCharacter)
@@ -480,6 +481,7 @@ const escapeForSlack = (text, options = {}) => {
   const usergroups = options.usergroups || {}
   const markdown = options.markdown || false
   const skipEmojiSpans = options.skipEmojiSpans || false
+  const skipParagraphBreaks = options.skipParagraphBreaks || false
   /** Links can contain characters such as *_&~` that are a part of the character set used by
    * Slack Mrkdwn so before converting slack mrkdwn to html we need to encode these characters
   */
@@ -491,7 +493,7 @@ const escapeForSlack = (text, options = {}) => {
       }" target="_blank" rel="noopener noreferrer">${match.linkHtml || encodedLink
       }</a>`
     })
-  const expandedText = markdown ? expandText(textWithEncodedLink) : textWithEncodedLink
+  const expandedText = markdown ? expandText(textWithEncodedLink, skipParagraphBreaks) : textWithEncodedLink
   return expandEmoji(
     XRegExp.replaceEach(expandedText, [
       [userMentionRegExp, replaceUserName(users)],
