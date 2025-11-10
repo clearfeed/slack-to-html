@@ -568,8 +568,54 @@ const buildSlackHawkDownRegExps = () => {
   }
 }
 
+/**
+ * Converts only Slack emoji shortcodes to unicode characters.
+ * Does NOT convert links, mentions, or markdown - ONLY emojis.
+ * Safe for use in Slack modals and other contexts where you want emoji conversion
+ * without HTML/markdown transformation.
+ *
+ * @param {string} text - Text with Slack emoji shortcodes like :emoji_name:
+ * @param {Object} customEmoji - Optional custom emoji map
+ * @returns {string} Text with unicode emoji characters
+ *
+ * @example
+ * convertEmojisToUnicode('Hello :wave:') // → 'Hello 👋'
+ * convertEmojisToUnicode('Link <https://example.com|test> :smile:') // → 'Link <https://example.com|test> 😄'
+ */
+const convertEmojisToUnicode = (text, customEmoji = {}) => {
+  const allEmoji = Object.assign({}, emoji, customEmoji)
+
+  return text.replace(/:(\S+?):/g, (match, originalKey) => {
+    const aliasPattern = /alias:(\S+)/
+    let key = originalKey
+    let emojiValue
+
+    // Resolve alias chains (similar to expandEmoji)
+    for (;;) {
+      emojiValue = allEmoji[key]
+      if (!emojiValue || !emojiValue.match(aliasPattern)) {
+        break
+      }
+      key = emojiValue.replace(aliasPattern, '$1')
+    }
+
+    // Skip if emoji not found or is a URL (custom emoji with image)
+    if (!emojiValue || emojiValue.match(/^https?:/)) {
+      return match
+    }
+
+    // Convert hex code(s) to unicode character
+    // Example: "1F535" → 🔵, "1F468-200D-1F4BB" → 👨‍💻
+    return emojiValue
+      .split('-')
+      .map((code) => String.fromCodePoint(parseInt(code, 16)))
+      .join('')
+  })
+}
+
 module.exports = {
   escapeForSlack: escapeForSlack,
   escapeForSlackWithMarkdown: escapeForSlackWithMarkdown,
   buildSlackHawkDownRegExps: buildSlackHawkDownRegExps,
+  convertEmojisToUnicode: convertEmojisToUnicode,
 }
