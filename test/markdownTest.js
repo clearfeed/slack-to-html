@@ -201,6 +201,44 @@ describe('markdown', () => {
       '<blockquote class="slack_block"> line 1</blockquote><div class="slack_line_break"></div><blockquote class="slack_block"> line 2</blockquote>'
     );
   });
+
+  describe('skipParagraphBreaks option', () => {
+    it('should skip paragraph break conversion when skipParagraphBreaks is true', () => {
+      escapeForSlackWithMarkdown('paragraph 1\n\nparagraph 2', { skipParagraphBreaks: true }).should.equal(
+        'paragraph 1\n\nparagraph 2'
+      );
+    });
+
+    it('should process paragraph breaks normally when skipParagraphBreaks is false', () => {
+      escapeForSlackWithMarkdown('paragraph 1\n\nparagraph 2', { skipParagraphBreaks: false }).should.equal(
+        'paragraph 1<div class="slack_line_break"></div>paragraph 2'
+      );
+    });
+
+    it('should skip paragraph breaks in text with markdown formatting when skipParagraphBreaks is true', () => {
+      escapeForSlackWithMarkdown('*bold text*\n\n_italic text_', { skipParagraphBreaks: true }).should.equal(
+        '<strong class="slack_bold">bold text</strong>\n\n<em class="slack_italics">italic text</em>'
+      );
+    });
+
+    it('should skip paragraph breaks between blockquotes when skipParagraphBreaks is true', () => {
+      escapeForSlackWithMarkdown('&gt; line 1\n\n&gt; line 2', { skipParagraphBreaks: true }).should.equal(
+        '<blockquote class="slack_block"> line 1</blockquote>\n\n<blockquote class="slack_block"> line 2</blockquote>'
+      );
+    });
+
+    it('should handle multiple paragraph breaks with skipParagraphBreaks true', () => {
+      escapeForSlackWithMarkdown('para 1\n\npara 2\n\npara 3', { skipParagraphBreaks: true }).should.equal(
+        'para 1\n\npara 2\n\npara 3'
+      );
+    });
+
+    it('should handle multiple paragraph breaks with skipParagraphBreaks false', () => {
+      escapeForSlackWithMarkdown('para 1\n\npara 2\n\npara 3', { skipParagraphBreaks: false }).should.equal(
+        'para 1<div class="slack_line_break"></div>para 2<div class="slack_line_break"></div>para 3'
+      );
+    });
+  });
 })
 
 

@@ -412,7 +412,7 @@ const replaceBlockQuotes = (text) => {
   return processedLines.join('\n')
 }
 
-const expandText = (text) => {
+const expandText = (text, skipParagraphBreaks = false) => {
   let expandedTextAndWindows
   expandedTextAndWindows = { text: text, windows: [[0, text.length]] }
   expandedTextAndWindows = replaceInWindows(
@@ -469,7 +469,8 @@ const expandText = (text) => {
     }
   )
 
-  return replaceParagraphBreaks(replaceBlockQuotes(expandedTextAndWindows.text))
+  const processedText = replaceBlockQuotes(expandedTextAndWindows.text)
+  return skipParagraphBreaks ? processedText : replaceParagraphBreaks(processedText)
 }
 
 const encodeSlackMrkdwnCharactersInLinks = (link) => XRegExp.replace(link, slackMrkdwnCharactersRegExp, (match) => slackMrkdwnPercentageCharsMap[match.mrkdwnCharacter] || match.mrkdwnCharacter)
@@ -480,6 +481,7 @@ const escapeForSlack = (text, options = {}) => {
   const usergroups = options.usergroups || {}
   const markdown = options.markdown || false
   const skipEmojiSpans = options.skipEmojiSpans || false
+  const skipParagraphBreaks = options.skipParagraphBreaks || false
   /** Links can contain characters such as *_&~` that are a part of the character set used by
    * Slack Mrkdwn so before converting slack mrkdwn to html we need to encode these characters
   */
@@ -491,7 +493,7 @@ const escapeForSlack = (text, options = {}) => {
       }" target="_blank" rel="noopener noreferrer">${match.linkHtml || encodedLink
       }</a>`
     })
-  const expandedText = markdown ? expandText(textWithEncodedLink) : textWithEncodedLink
+  const expandedText = markdown ? expandText(textWithEncodedLink, skipParagraphBreaks) : textWithEncodedLink
   return expandEmoji(
     XRegExp.replaceEach(expandedText, [
       [userMentionRegExp, replaceUserName(users)],
@@ -533,6 +535,75 @@ const escapeForSlack = (text, options = {}) => {
   )
 }
 
+/**
+ * @typedef {Object} SlackToHtmlOptions
+ * @property {Object.<string, string>} [customEmoji={}] - Map of custom emoji shortcodes to their values.
+ *   Values can be URLs (e.g., "https://example.com/emoji.png") or unicode codepoints (e.g., "1f600").
+ *   Supports emoji aliases in the format "alias:emoji_name".
+ * @property {Object.<string, string>} [users={}] - Map of Slack user IDs (e.g., "U123456") to display names.
+ *   Used to replace user mentions like <@U123456> with formatted @username spans.
+ * @property {Object.<string, string>} [channels={}] - Map of Slack channel IDs (e.g., "C123456") to channel names.
+ *   Used to replace channel mentions like <#C123456> with formatted #channel-name.
+ * @property {Object.<string, string>} [usergroups={}] - Map of Slack usergroup IDs (e.g., "S123456") to group names.
+ *   Used to replace usergroup mentions like <!subteam^S123456> with formatted @groupname.
+ * @property {boolean} [skipEmojiSpans=false] - Whether to skip wrapping emoji with span elements.
+ *   When true, emojis are rendered as plain Unicode characters without <span> wrappers.
+ *   When false, emojis are wrapped like: <span title=":emoji_name:">🎉</span>
+ * @property {boolean} [skipParagraphBreaks=false] - Whether to skip converting paragraph breaks to div elements.
+ *   When true, double newlines (\n\n) are preserved as-is.
+ *   When false, double newlines are converted to <div class="slack_line_break"></div>.
+ * Converts Slack-formatted text to HTML with markdown parsing enabled.
+ *
+ * It processes Slack's mrkdwn formatting (bold, italic, strikethrough,
+ * code blocks, blockquotes), replaces mentions (users, channels, usergroups), converts
+ * emoji shortcodes to HTML, and handles links.
+ *
+ * Processed formatting includes:
+ * - *bold text* → <strong class="slack_bold">bold text</strong>
+ * - _italic text_ → <em class="slack_italics">italic text</em>
+ * - ~strikethrough~ → <s class="slack_strikethrough">strikethrough</s>
+ * - `inline code` → <span class="slack_code"><code>inline code</code></span>
+ * - ```code block``` → <div class="slack_code"><code>code block</code></div>
+ * - >blockquote → <blockquote class="slack_block">blockquote</blockquote>
+ * - >>>multi-line block → <div class="slack_block">multi-line block</div>
+ * - :emoji: → Unicode emoji or custom emoji image
+ * - <@U123456> → <span class="user-mention">@username</span>
+ * - <#C123456> → #channel-name
+ * - <!subteam^S123456> → @groupname
+ * - <http://example.com|link text> → <a href="..." target="_blank">link text</a>
+ * - Double newlines (\n\n) → <div class="slack_line_break"></div> (unless skipParagraphBreaks is true)
+ *
+ * @param {string} text - The Slack-formatted text to convert
+ * @param {SlackToHtmlOptions} [options={}] - Configuration options for the conversion
+ * @returns {string} HTML-formatted string with Slack markdown converted to HTML tags
+ *
+ * @example
+ * // Basic usage with markdown
+ * escapeForSlackWithMarkdown('Hello *world*!')
+ * // Returns: 'Hello <strong class="slack_bold">world</strong>!'
+ *
+ * @example
+ * // With user mentions
+ * escapeForSlackWithMarkdown('<@U123456> said hello', {
+ *   users: { 'U123456': 'john.doe' }
+ * })
+ * // Returns: '<span class="user-mention">@john.doe</span> said hello'
+ *
+ * @example
+ * // With custom emoji and skipEmojiSpans
+ * escapeForSlackWithMarkdown('Great work :party_parrot:', {
+ *   customEmoji: { 'party_parrot': 'https://example.com/parrot.gif' },
+ *   skipEmojiSpans: true
+ * })
+ * // Returns: 'Great work <img alt="party_parrot" src="https://example.com/parrot.gif" ... />'
+ *
+ * @example
+ * // With skipParagraphBreaks to preserve original line breaks
+ * escapeForSlackWithMarkdown('Line 1\n\nLine 2', {
+ *   skipParagraphBreaks: true
+ * })
+ * // Returns: 'Line 1\n\nLine 2' (no div conversion)
+ */
 const escapeForSlackWithMarkdown = (text, options = {}) => {
   return escapeForSlack(text, Object.assign({}, options, { markdown: true }))
 }
