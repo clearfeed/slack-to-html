@@ -98,7 +98,7 @@ const commandRegExp = XRegExp.cache(
 const knownCommands = ['here', 'channel', 'group', 'everyone']
 
 // Placeholder constants for protecting links from markdown processing
-// Using Unicode characters that won't be matched by markdown patterns
+// Using a unique placeholder pattern that is unlikely to appear in user content
 const CF_LINK_PLACEHOLDER_PREFIX = '[CF_LINKPLACEHOLDER'
 const CF_LINK_PLACEHOLDER_SUFFIX = ']'
 const generateLinkPlaceholder = (index) => `${CF_LINK_PLACEHOLDER_PREFIX}${index}${CF_LINK_PLACEHOLDER_SUFFIX}`
@@ -492,11 +492,10 @@ const expandText = (text, skipParagraphBreaks = false) => {
   let processedText = replaceBlockQuotes(expandedTextAndWindows.text)
   processedText = skipParagraphBreaks ? processedText : replaceParagraphBreaks(processedText)
 
-  // Restore link placeholders with actual HTML
-  linkPlaceholders.forEach((linkHtml, index) => {
-    const placeholder = generateLinkPlaceholder(index)
-    processedText = processedText.replace(placeholder, linkHtml)
-  })
+  const placeholderRegex = new RegExp(`\\${CF_LINK_PLACEHOLDER_PREFIX}(\\d+)\\${CF_LINK_PLACEHOLDER_SUFFIX}`, 'g')
+  processedText = processedText.replace(
+    placeholderRegex, (_, index) => linkPlaceholders[index]
+  )
 
   return processedText
 }
@@ -512,13 +511,13 @@ const escapeForSlack = (text, options = {}) => {
 
   // When markdown is enabled, links are processed within expandText to ensure proper window partitioning
   // When markdown is disabled, process links here
-  const textWithEncodedLink = markdown ? (text || '') : XRegExp.replace(text || '',
-    linkRegExp,
-    (match) => {
+  const textToProcess = text || ''
+  const expandedText = markdown
+    ? expandText(textToProcess, skipParagraphBreaks)
+    : XRegExp.replace(textToProcess, linkRegExp, (match) => {
       const encodedLink = encodeSlackMrkdwnCharactersInLinks(match.linkUrl)
       return `<a href="${encodedLink}" target="_blank" rel="noopener noreferrer">${match.linkHtml || encodedLink}</a>`
     })
-  const expandedText = markdown ? expandText(textWithEncodedLink, skipParagraphBreaks) : textWithEncodedLink
   return expandEmoji(
     XRegExp.replaceEach(expandedText, [
       [userMentionRegExp, replaceUserName(users)],
