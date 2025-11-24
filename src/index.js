@@ -513,7 +513,11 @@ const escapeForSlack = (text, options = {}) => {
   // When markdown is disabled, process links here
   const textToProcess = text || ''
   const expandedText = markdown
-    ? expandText(textToProcess, skipParagraphBreaks)
+  ? expandText(textToProcess, skipParagraphBreaks)
+    /**
+     * Links can contain characters such as *_&~` that are a part of the character set used by
+     * Slack Mrkdwn so before converting slack mrkdwn to html we need to encode these characters
+    */
     : XRegExp.replace(textToProcess, linkRegExp, (match) => {
       const encodedLink = encodeSlackMrkdwnCharactersInLinks(match.linkUrl)
       return `<a href="${encodedLink}" target="_blank" rel="noopener noreferrer">${match.linkHtml || encodedLink}</a>`
