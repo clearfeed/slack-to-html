@@ -97,6 +97,12 @@ const commandRegExp = XRegExp.cache(
 )
 const knownCommands = ['here', 'channel', 'group', 'everyone']
 
+// Placeholder constants for protecting links from markdown processing
+// Using Unicode characters that won't be matched by markdown patterns
+const CF_LINK_PLACEHOLDER_PREFIX = '[CF_LINKPLACEHOLDER'
+const CF_LINK_PLACEHOLDER_SUFFIX = ']'
+const generateLinkPlaceholder = (index) => `${CF_LINK_PLACEHOLDER_PREFIX}${index}${CF_LINK_PLACEHOLDER_SUFFIX}`
+
 const escapeTags = (string) =>
   ['&lt;', string.substring(1, string.length - 1), '&gt;'].join('')
 
@@ -412,9 +418,23 @@ const replaceBlockQuotes = (text) => {
   return processedLines.join('\n')
 }
 
+const encodeSlackMrkdwnCharactersInLinks = (link) => XRegExp.replace(link, slackMrkdwnCharactersRegExp, (match) => slackMrkdwnPercentageCharsMap[match.mrkdwnCharacter] || match.mrkdwnCharacter)
+
 const expandText = (text, skipParagraphBreaks = false) => {
   let expandedTextAndWindows
-  expandedTextAndWindows = { text: text, windows: [[0, text.length]] }
+
+  // Use placeholders to protect links from markdown processing
+  const linkPlaceholders = []
+  const textWithPlaceholders = XRegExp.replace(text, linkRegExp, (match) => {
+    const encodedLink = encodeSlackMrkdwnCharactersInLinks(match.linkUrl)
+    const linkHtml = `<a href="${encodedLink}" target="_blank" rel="noopener noreferrer">${match.linkHtml || encodedLink}</a>`
+    const placeholder = generateLinkPlaceholder(linkPlaceholders.length)
+    linkPlaceholders.push(linkHtml)
+    return placeholder
+  })
+
+  expandedTextAndWindows = { text: textWithPlaceholders, windows: [[0, textWithPlaceholders.length]] }
+
   expandedTextAndWindows = replaceInWindows(
     expandedTextAndWindows.text,
     '```',
@@ -469,11 +489,18 @@ const expandText = (text, skipParagraphBreaks = false) => {
     }
   )
 
-  const processedText = replaceBlockQuotes(expandedTextAndWindows.text)
-  return skipParagraphBreaks ? processedText : replaceParagraphBreaks(processedText)
+  let processedText = replaceBlockQuotes(expandedTextAndWindows.text)
+  processedText = skipParagraphBreaks ? processedText : replaceParagraphBreaks(processedText)
+
+  // Restore link placeholders with actual HTML
+  linkPlaceholders.forEach((linkHtml, index) => {
+    const placeholder = generateLinkPlaceholder(index)
+    processedText = processedText.replace(placeholder, linkHtml)
+  })
+
+  return processedText
 }
 
-const encodeSlackMrkdwnCharactersInLinks = (link) => XRegExp.replace(link, slackMrkdwnCharactersRegExp, (match) => slackMrkdwnPercentageCharsMap[match.mrkdwnCharacter] || match.mrkdwnCharacter)
 const escapeForSlack = (text, options = {}) => {
   const customEmoji = options.customEmoji || {}
   const users = options.users || {}
@@ -482,16 +509,14 @@ const escapeForSlack = (text, options = {}) => {
   const markdown = options.markdown || false
   const skipEmojiSpans = options.skipEmojiSpans || false
   const skipParagraphBreaks = options.skipParagraphBreaks || false
-  /** Links can contain characters such as *_&~` that are a part of the character set used by
-   * Slack Mrkdwn so before converting slack mrkdwn to html we need to encode these characters
-  */
-  const textWithEncodedLink = XRegExp.replace(text || '',
+
+  // When markdown is enabled, links are processed within expandText to ensure proper window partitioning
+  // When markdown is disabled, process links here
+  const textWithEncodedLink = markdown ? (text || '') : XRegExp.replace(text || '',
     linkRegExp,
     (match) => {
       const encodedLink = encodeSlackMrkdwnCharactersInLinks(match.linkUrl)
-      return `<a href="${encodedLink
-      }" target="_blank" rel="noopener noreferrer">${match.linkHtml || encodedLink
-      }</a>`
+      return `<a href="${encodedLink}" target="_blank" rel="noopener noreferrer">${match.linkHtml || encodedLink}</a>`
     })
   const expandedText = markdown ? expandText(textWithEncodedLink, skipParagraphBreaks) : textWithEncodedLink
   return expandEmoji(
