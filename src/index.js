@@ -494,7 +494,7 @@ const expandText = (text, skipParagraphBreaks = false) => {
 
   const placeholderRegex = new RegExp(`\\${CF_LINK_PLACEHOLDER_PREFIX}(\\d+)\\${CF_LINK_PLACEHOLDER_SUFFIX}`, 'g')
   processedText = processedText.replace(
-    placeholderRegex, (_, index) => linkPlaceholders[index]
+    placeholderRegex, (match, index) => linkPlaceholders[index] || match
   )
 
   return processedText
