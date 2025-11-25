@@ -53,25 +53,25 @@ describe('control sequences', () => {
 
   describe('hyperlinks', () => {
     it('should render an anchor tag', () => {
-      escapeForSlack('<https://swiftype.com>').should.equal('<a href="https://swiftype.com" target="_blank" rel="noopener noreferrer">https://swiftype.com</a>')
+      escapeForSlack('<https://swiftype.com>').should.equal('<a href="https://swiftype.com" target="&#95;blank" rel="noopener noreferrer">https://swiftype.com</a>')
     })
 
     it('should render the label in the anchor tag if present', () => {
-      escapeForSlack('<https://swiftype.com|Swiftype>').should.equal('<a href="https://swiftype.com" target="_blank" rel="noopener noreferrer">Swiftype</a>')
+      escapeForSlack('<https://swiftype.com|Swiftype>').should.equal('<a href="https://swiftype.com" target="&#95;blank" rel="noopener noreferrer">Swiftype</a>')
     })
 
     it('should encode characters used by slack mrkdwn in links and not replace them with divs', () => {
-      escapeForSlack('<https://swiftype.com?q=~``*bold*&```some code```~code_block~_italics_&gt;&gtgt&g>').should.equal('<a href="https://swiftype.com?q=%7E%27%27%2Abold%2A&%27%27%27some code%27%27%27%7Ecode%5Fblock%7E%5Fitalics%5F%26gt;&gtgt&g" target="_blank" rel="noopener noreferrer">https://swiftype.com?q=%7E%27%27%2Abold%2A&%27%27%27some code%27%27%27%7Ecode%5Fblock%7E%5Fitalics%5F%26gt;&gtgt&g</a>')
+      escapeForSlack('<https://swiftype.com?q=~``*bold*&```some code```~code_block~_italics_&gt;&gtgt&g>').should.equal('<a href="https://swiftype.com?q=%7E%27%27%2Abold%2A&%27%27%27some code%27%27%27%7Ecode%5Fblock%7E%5Fitalics%5F%26gt;&gtgt&g" target="&#95;blank" rel="noopener noreferrer">https://swiftype.com?q=%7E%27%27%2Abold%2A&%27%27%27some code%27%27%27%7Ecode%5Fblock%7E%5Fitalics%5F%26gt;&gtgt&g</a>')
     })
   })
 
   describe('mail links', () => {
     it('should render a mailto tag', () => {
-      escapeForSlack('<mailto:test@swiftype.com>').should.equal('<a href="mailto:test@swiftype.com" target="_blank" rel="noopener noreferrer">test@swiftype.com</a>')
+      escapeForSlack('<mailto:test@swiftype.com>').should.equal('<a href="mailto:test@swiftype.com" target="&#95;blank" rel="noopener noreferrer">test@swiftype.com</a>')
     })
 
     it('should render the label in the anchor tag if present', () => {
-      escapeForSlack('<mailto:test@swiftype.com|Test>').should.equal('<a href="mailto:test@swiftype.com" target="_blank" rel="noopener noreferrer">Test</a>')
+      escapeForSlack('<mailto:test@swiftype.com|Test>').should.equal('<a href="mailto:test@swiftype.com" target="&#95;blank" rel="noopener noreferrer">Test</a>')
     })
   })
 
@@ -99,15 +99,15 @@ describe('control sequences', () => {
 
       describe('for the subteam command', () => {
         it('should render as a group link when the label is present', () => {
-          escapeForSlack("<!subteam^S123|swiftype-eng>").should.equal(
-            "@swiftype-eng"
-          );
+          escapeForSlack('<!subteam^S123|swiftype-eng>').should.equal(
+            '@swiftype-eng'
+          )
         })
 
         it('should render the group name if present', () => {
-          escapeForSlack("<!subteam^S123>", {
-            usergroups: { S123: "swiftype-eng" },
-          }).should.equal("@swiftype-eng");
+          escapeForSlack('<!subteam^S123>', {
+            usergroups: { S123: 'swiftype-eng' },
+          }).should.equal('@swiftype-eng')
         })
 
         it('should render the original value if the channel name is not present', () => {
@@ -129,7 +129,7 @@ describe('control sequences', () => {
 
   describe('ordering', () => {
     it('should render <!here|@here> <https://swiftype.com>', () => {
-      escapeForSlack('<!here|@here> <https://swiftype.com>').should.equal('@here <a href="https://swiftype.com" target="_blank" rel="noopener noreferrer">https://swiftype.com</a>')
+      escapeForSlack('<!here|@here> <https://swiftype.com>').should.equal('@here <a href="https://swiftype.com" target="&#95;blank" rel="noopener noreferrer">https://swiftype.com</a>')
     })
   })
 })
