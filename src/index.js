@@ -482,15 +482,18 @@ const escapeForSlack = (text, options = {}) => {
   const markdown = options.markdown || false
   const skipEmojiSpans = options.skipEmojiSpans || false
   const skipParagraphBreaks = options.skipParagraphBreaks || false
-  /** Links can contain characters such as *_&~` that are a part of the character set used by
-   * Slack Mrkdwn so before converting slack mrkdwn to html we need to encode these characters
+  /**
+   * Links can contain characters such as *_&~` that are a part of the character set used by
+   * Slack Mrkdwn. So, before converting Slack Mrkdwn to HTML we need to encode these characters
+   * We use &#95; instead of _ in HTML attributes to prevent markdown processor from
+   * matching them with markdown delimiters
   */
   const textWithEncodedLink = XRegExp.replace(text || '',
     linkRegExp,
     (match) => {
       const encodedLink = encodeSlackMrkdwnCharactersInLinks(match.linkUrl)
       return `<a href="${encodedLink
-      }" target="_blank" rel="noopener noreferrer">${match.linkHtml || encodedLink
+      }" target="&#95;blank" rel="noopener noreferrer">${match.linkHtml || encodedLink
       }</a>`
     })
   const expandedText = markdown ? expandText(textWithEncodedLink, skipParagraphBreaks) : textWithEncodedLink
@@ -503,7 +506,7 @@ const escapeForSlack = (text, options = {}) => {
         (match) =>
           `<a href="mailto:${
             match.mailTo
-          }" target="_blank" rel="noopener noreferrer">${
+          }" target="&#95;blank" rel="noopener noreferrer">${
             match.mailToName || match.mailTo
           }</a>`,
       ],
