@@ -560,9 +560,9 @@ const escapeForSlack = (text, options = {}) => {
  * @property {boolean} [skipParagraphBreaks=false] - Whether to skip converting paragraph breaks to div elements.
  *   When true, double newlines (\n\n) are preserved as-is.
  *   When false, double newlines are converted to <div class="slack_line_break"></div>.
- * @property {boolean} [convertNewlinesToBr=false] - Whether to convert single newlines to <br> tags.
- *   When true, single newlines (\n) are converted to <br> tags.
- *   When false, single newlines are preserved as-is.
+ * @property {boolean} [convertNewlinesToBr=false] - Whether to convert newline characters to <br> tags.
+ *   When true, all newline characters are converted to <br> tags.
+ *   When false, all newline characters are preserved as-is.
  *   Useful for systems like Intercom that don't respect plain newline characters in HTML.
  * Converts Slack-formatted text to HTML with markdown parsing enabled.
  *
