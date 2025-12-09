@@ -482,6 +482,7 @@ const escapeForSlack = (text, options = {}) => {
   const markdown = options.markdown || false
   const skipEmojiSpans = options.skipEmojiSpans || false
   const skipParagraphBreaks = options.skipParagraphBreaks || false
+  const convertNewlinesToBr = options.convertNewlinesToBr || false
   /**
    * Links can contain characters such as *_&~` that are a part of the character set used by
    * Slack Mrkdwn. So, before converting Slack Mrkdwn to HTML we need to encode these characters
@@ -497,7 +498,7 @@ const escapeForSlack = (text, options = {}) => {
       }</a>`
     })
   const expandedText = markdown ? expandText(textWithEncodedLink, skipParagraphBreaks) : textWithEncodedLink
-  return expandEmoji(
+  const processedText = expandEmoji(
     XRegExp.replaceEach(expandedText, [
       [userMentionRegExp, replaceUserName(users)],
       [channelMentionRegExp, replaceChannelName(channels)],
@@ -536,6 +537,10 @@ const escapeForSlack = (text, options = {}) => {
     customEmoji,
     skipEmojiSpans
   )
+
+  return convertNewlinesToBr
+    ? XRegExp.replace(processedText, newlineRegExp, lineBreakTagLiteral)
+    : processedText
 }
 
 /**
@@ -555,6 +560,10 @@ const escapeForSlack = (text, options = {}) => {
  * @property {boolean} [skipParagraphBreaks=false] - Whether to skip converting paragraph breaks to div elements.
  *   When true, double newlines (\n\n) are preserved as-is.
  *   When false, double newlines are converted to <div class="slack_line_break"></div>.
+ * @property {boolean} [convertNewlinesToBr=false] - Whether to convert newline characters to <br> tags.
+ *   When true, all newline characters are converted to <br> tags.
+ *   When false, all newline characters are preserved as-is.
+ *   Useful for systems like Intercom that don't respect plain newline characters in HTML.
  * Converts Slack-formatted text to HTML with markdown parsing enabled.
  *
  * It processes Slack's mrkdwn formatting (bold, italic, strikethrough,
