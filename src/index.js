@@ -146,8 +146,8 @@ const buildOpeningDelimiterRegExp = (
   )
 }
 
-// Punctuation allowed immediately after bold/italic/strikethrough closing delimiters
-const closingDelimiterAllowedPunctuation = ',:!?'
+// Chars allowed after closing * _ ~ so "*bold*, " and "*bold*." still match.
+const closingDelimiterAllowedChars = '"\',:!?'
 
 // We can't perform negative lookahead to capture the last consecutive delimiter
 // since delimiters can be more than once character long
@@ -159,7 +159,7 @@ const buildClosingDelimiterRegExp = (
     ? XRegExp.escape(delimiter)
     : delimiter
   const suffixRegexPart = spacePadded
-    ? `(?<closingCapturedWhitespace>\\s|["'${closingDelimiterAllowedPunctuation}]|$)`
+    ? `(?<closingCapturedWhitespace>\\s|[${closingDelimiterAllowedChars}]|$)`
     : ''
   return XRegExp.cache(
     `${escapedDelimiter}${suffixRegexPart}`,
