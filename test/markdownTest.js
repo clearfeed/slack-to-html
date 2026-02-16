@@ -65,6 +65,15 @@ describe('markdown', () => {
       escapeForSlackWithMarkdown('*label*: value').should.equal(
         '<strong class="slack_bold">label</strong>: value'
       )
+      escapeForSlackWithMarkdown('*really*?').should.equal(
+        '<strong class="slack_bold">really</strong>?'
+      )
+      escapeForSlackWithMarkdown("*today*'s").should.equal(
+        "<strong class=\"slack_bold\">today</strong>'s"
+      )
+      escapeForSlackWithMarkdown('This is *bold*.').should.equal(
+        'This is <strong class="slack_bold">bold</strong>.'
+      )
     })
   })
 

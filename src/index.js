@@ -146,8 +146,8 @@ const buildOpeningDelimiterRegExp = (
   )
 }
 
-// Chars allowed after closing * _ ~ so "*bold*, " and "*bold*." still match.
-const closingDelimiterAllowedChars = '"\',:!?'
+// Chars allowed after closing * _ ~ so "*bold*,", "*bold*." and "*label*: " still match.
+const closingDelimiterAllowedChars = '"\',.:!?'
 
 // We can't perform negative lookahead to capture the last consecutive delimiter
 // since delimiters can be more than once character long
