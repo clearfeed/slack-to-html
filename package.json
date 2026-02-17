@@ -1,6 +1,6 @@
 {
   "name": "@clearfeed-ai/slack-to-html",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Render Slack markdown as HTML",
   "main": "dist/bundle.js",
   "scripts": {
