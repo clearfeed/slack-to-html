@@ -113,6 +113,18 @@ describe('markdown', () => {
       escapeForSlackWithMarkdown('Really? _yes_!').should.equal(
         'Really? <em class="slack_italics">yes</em>!'
       )
+      escapeForSlackWithMarkdown('_label_: value').should.equal(
+        '<em class="slack_italics">label</em>: value'
+      )
+      escapeForSlackWithMarkdown('_really_?').should.equal(
+        '<em class="slack_italics">really</em>?'
+      )
+      escapeForSlackWithMarkdown("_today_'s").should.equal(
+        "<em class=\"slack_italics\">today</em>'s"
+      )
+      escapeForSlackWithMarkdown('This is _italic_.').should.equal(
+        'This is <em class="slack_italics">italic</em>.'
+      )
     })
   })
 
@@ -136,6 +148,21 @@ describe('markdown', () => {
     it('should allow punctuation after closing delimiter', () => {
       escapeForSlackWithMarkdown('~struck~, next word').should.equal(
         '<s class="slack_strikethrough">struck</s>, next word'
+      )
+      escapeForSlackWithMarkdown('Really? ~yes~!').should.equal(
+        'Really? <s class="slack_strikethrough">yes</s>!'
+      )
+      escapeForSlackWithMarkdown('~label~: value').should.equal(
+        '<s class="slack_strikethrough">label</s>: value'
+      )
+      escapeForSlackWithMarkdown('~really~?').should.equal(
+        '<s class="slack_strikethrough">really</s>?'
+      )
+      escapeForSlackWithMarkdown("~today~'s").should.equal(
+        "<s class=\"slack_strikethrough\">today</s>'s"
+      )
+      escapeForSlackWithMarkdown('This is ~struck~.').should.equal(
+        'This is <s class="slack_strikethrough">struck</s>.'
       )
     })
   })
