@@ -10,7 +10,7 @@
     "compile": "babel src --out-dir dist",
     "build": "npm run update-emoji && npm run compile && esbuild dist/index.js --bundle --global-name=slackToHtml --outfile=dist/bundle.js --platform=browser --minify && esbuild dist/index.js --minify --platform=node --outfile=dist/index.js --allow-overwrite",
     "test": "npm run update-emoji && mocha",
-    "lint": "eslint src/index.js",
+    "lint": "eslint .",
     "prepublish": "npm run lint && npm test && npm run build"
   },
   "repository": {
