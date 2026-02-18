@@ -1,0 +1,5 @@
+require:
+  - "@babel/register"
+  - "./test/common.js"
+spec: "test/**/*.js"
+recursive: true
