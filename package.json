@@ -1,9 +1,8 @@
 {
   "name": "@clearfeed-ai/slack-to-html",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "description": "Render Slack markdown as HTML",
   "main": "dist/index.js",
-  "browser": "dist/bundle.js",
   "scripts": {
     "update-emoji": "node updateEmoji.js",
     "print-patterns": "npm run build && node printBuiltSlackHawkDownRegExps.js",
