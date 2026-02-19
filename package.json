@@ -1,14 +1,14 @@
 {
   "name": "@clearfeed-ai/slack-to-html",
-  "version": "1.2.3",
+  "version": "1.2.5",
   "description": "Render Slack markdown as HTML",
   "main": "dist/index.js",
-  "browser": "dist/bundle.js",
+  "browser": "dist/browser.js",
   "scripts": {
     "update-emoji": "node updateEmoji.js",
     "print-patterns": "npm run build && node printBuiltSlackHawkDownRegExps.js",
     "compile": "babel src --out-dir dist",
-    "build": "npm run update-emoji && npm run compile && esbuild dist/index.js --bundle --global-name=slackToHtml --outfile=dist/bundle.js --platform=browser --minify --target=es2015 && esbuild dist/index.js --minify --platform=node --outfile=dist/index.js --allow-overwrite --target=es2015",
+    "build": "npm run update-emoji && npm run compile && esbuild dist/index.js --bundle --format=cjs --outfile=dist/browser.js --platform=browser --minify --target=es2015 && esbuild dist/index.js --minify --platform=node --outfile=dist/index.js --allow-overwrite --target=es2015",
     "test": "npm run update-emoji && mocha",
     "lint": "eslint .",
     "prepublish": "npm run lint && npm test && npm run build"
