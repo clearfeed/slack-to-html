@@ -1,17 +1,17 @@
 {
   "name": "@clearfeed-ai/slack-to-html",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Render Slack markdown as HTML",
-  "main": "dist/bundle.js",
+  "main": "dist/index.js",
+  "browser": "dist/bundle.js",
   "scripts": {
     "update-emoji": "node updateEmoji.js",
     "print-patterns": "npm run build && node printBuiltSlackHawkDownRegExps.js",
-    "compile": "babel src --presets babel-preset-es2015 --out-dir dist",
-    "build": "npm run update-emoji && npm run compile && browserify dist/index.js --standalone slack-hawk-down -o dist/bundle.js",
-    "test": "npm run update-emoji && mocha --compilers js:babel-core/register",
-    "eslint": "eslint src/index.js",
-    "precommit": "npm run eslint",
-    "prepublish": "npm run precommit && npm test && npm run build"
+    "compile": "babel src --out-dir dist",
+    "build": "npm run update-emoji && npm run compile && esbuild dist/index.js --bundle --global-name=slackToHtml --outfile=dist/bundle.js --platform=browser --minify --target=es2015 && esbuild dist/index.js --minify --platform=node --outfile=dist/index.js --allow-overwrite --target=es2015",
+    "test": "npm run update-emoji && mocha",
+    "lint": "eslint .",
+    "prepublish": "npm run lint && npm test && npm run build"
   },
   "repository": {
     "type": "git",
@@ -30,84 +30,16 @@
     "xregexp": "^3.2.0"
   },
   "devDependencies": {
-    "babel-cli": "^6.26.0",
-    "babel-core": "^6.23.0",
-    "babel-polyfill": "^6.26.0",
-    "babel-preset-babili": "0.0.12",
-    "babel-preset-env": "^1.2.1",
-    "babel-preset-es2015": "^6.22.0",
-    "babelify": "^7.3.0",
-    "browserify": "^16.1.1",
-    "chai": "^3.5.0",
-    "eslint": "^3.17.1",
-    "eslint-config-airbnb": "^14.1.0",
-    "eslint-plugin-import": "^2.2.0",
-    "eslint-plugin-jsx-a11y": "^4.0.0",
-    "eslint-plugin-react": "^6.10.0",
-    "husky": "^0.13.2",
-    "mocha": "^3.4.1"
-  },
-  "eslintConfig": {
-    "extends": "airbnb",
-    "env": {
-      "browser": true
-    },
-    "parserOptions": {
-      "ecmaVersion": 7,
-      "sourceType": "module",
-      "ecmaFeatures": {
-        "jsx": true,
-        "experimentalObjectRestSpread": true
-      }
-    },
-    "settings": {
-      "import/resolver": "node"
-    },
-    "globals": {
-      "_": true
-    },
-    "rules": {
-      "comma-dangle": 0,
-      "global-require": 0,
-      "max-len": 0,
-      "import/no-mutable-exports": 0,
-      "arrow-body-style": 0,
-      "no-return-assign": 0,
-      "object-shorthand": 0,
-      "linebreak-style": 0,
-      "newline-per-chained-call": 0,
-      "new-cap": 0,
-      "no-multi-spaces": 0,
-      "no-mixed-operators": 0,
-      "arrow-parens": [
-        2,
-        "always"
-      ],
-      "semi": [
-        2,
-        "never"
-      ],
-      "quotes": [
-        2,
-        "single"
-      ],
-      "no-console": [
-        1,
-        {
-          "allow": [
-            "warn",
-            "error"
-          ]
-        }
-      ],
-      "no-param-reassign": [
-        2,
-        {
-          "props": false
-        }
-      ],
-      "no-continue": 0
-    }
+    "@babel/cli": "^7.24.0",
+    "@babel/core": "^7.24.0",
+    "@babel/preset-env": "^7.24.0",
+    "@babel/register": "^7.23.7",
+    "@eslint/js": "^9.0.0",
+    "chai": "^4.4.1",
+    "esbuild": "^0.27.3",
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0",
+    "mocha": "^10.4.0"
   },
   "directories": {
     "test": "test"
