@@ -560,35 +560,24 @@ const escapeForSlack = (text, options = {}) => {
     skipEmojiSpans
   );
 
-  // const normalized = escaped.replace(/^•\s+/gm, "- ");
-
-  // // Step 3: Slack stores blank lines as lines containing only whitespace (e.g. "  ").
-  // // When passed directly to marked, such lines are treated as block separators and
-  // // produce no visible output. Replace them with &nbsp; wrapped in blank lines so
-  // // marked emits a visible empty paragraph.
-  // // This is safe here because the text is passed straight to renderMarkdown and does
-  // // NOT go back through escapeForSlackWithMarkdown (which would re-convert "\n\n").
-  // const withPreservedBlanks = normalized
-  //   .split("\n")
-  //   .map((line: string) => (/^[ \t]+$/.test(line) ? "\n&nbsp;\n" : line))
-  //   .join("\n");
-
-  // // Step 4: With marked's `breaks: true`, plain text that immediately follows the
-  // // last list item (no blank line) is treated as a continuation of the last <li>
-  // // and rendered indented inside the <ul>. Insert a blank line whenever a list item
-  // // is directly followed by non-list, non-blank content so marked closes the list
-  // // and opens a fresh paragraph instead.
-  // const withListBoundaries = withPreservedBlanks.replace(
-  //   /^(- [^\n]*)(\n)(?=[^\n-\s])/gm,
-  //   "$1$2\n"
-  // );
-
   let finalText = processedText;
 
   if (normalizeForMarkdownRendering) {
     // Convert bullet-character lines (stored by the backend as "• item") to
     // markdown list syntax so renderMarkdown produces indented <ul> elements.
-    finalText = finalText.replace(/^•\s+/gm, "- ");
+    // The regex uses ^\s* to handle bullets that may be prefixed with leading
+    // whitespace (e.g. "   • item" produced by html-to-mrkdwn-ts when converting
+    // HTML lists to Slack mrkdwn).  All indentation is stripped so that marked
+    // always receives a flat "- item" list regardless of the source format.
+    finalText = finalText.replace(/^\s*•\s+/gm, "- ");
+
+    // With marked's `breaks: true`, a list block is only recognised when it is
+    // preceded by a blank line.  If regular (non-list, non-blank) content
+    // immediately precedes the first list item with only a single newline,
+    // marked treats the "- " lines as a line-break continuation of the
+    // paragraph instead of opening a <ul> element.  Insert a blank line
+    // whenever non-list content is directly followed by a list item.
+    finalText = finalText.replace(/^(?!- )(.+)\n(- )/gm, "$1\n\n$2");
 
     // Slack stores blank lines as lines containing only whitespace (e.g. "  ").
     // When passed directly to marked, such lines are treated as block separators
