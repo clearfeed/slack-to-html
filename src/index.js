@@ -1,5 +1,5 @@
-import XRegExp from "xregexp/src/index";
-import emoji from "./emoji";
+import XRegExp from 'xregexp/src/index';
+import emoji from './emoji';
 
 const expandEmoji = (text, customEmoji = {}, skipEmojiSpans = false) => {
   const allEmoji = Object.assign({}, emoji, customEmoji);
@@ -13,7 +13,7 @@ const expandEmoji = (text, customEmoji = {}, skipEmojiSpans = false) => {
       if (!emojiValue || !emojiValue.match(aliasPattern)) {
         break;
       }
-      key = emojiValue.replace(aliasPattern, "$1");
+      key = emojiValue.replace(aliasPattern, '$1');
     }
 
     if (key && emojiValue) {
@@ -22,9 +22,9 @@ const expandEmoji = (text, customEmoji = {}, skipEmojiSpans = false) => {
       }
 
       const emojiHtml = emojiValue
-        .split("-")
+        .split('-')
         .map((emojiCode) => `&#x${emojiCode};`)
-        .join("");
+        .join('');
 
       // If skipEmojiSpans is true, return just the unicode emoji without span wrapper
       if (skipEmojiSpans) {
@@ -36,70 +36,70 @@ const expandEmoji = (text, customEmoji = {}, skipEmojiSpans = false) => {
   });
 };
 
-const closingDivPatternString = "</div>";
-const closingSpanPatternString = "</span>";
+const closingDivPatternString = '</div>';
+const closingSpanPatternString = '</span>';
 const codeDivOpeningPatternString = '<div class="slack_code">';
 const codeSpanOpeningPatternString = '<span class="slack_code">';
-const openingCodePatternString = "<code>";
-const closingCodePatternString = "</code>";
+const openingCodePatternString = '<code>';
+const closingCodePatternString = '</code>';
 const boldOpeningPatternString = '<strong class="slack_bold">';
-const boldClosingPatternString = "</strong>";
+const boldClosingPatternString = '</strong>';
 const strikethroughOpeningPatternString = '<s class="slack_strikethrough">';
-const strikethroughClosingPatternString = "</s>";
+const strikethroughClosingPatternString = '</s>';
 const italicOpeningPatternString = '<em class="slack_italics">';
-const italicClosingPatternString = "</em>";
+const italicClosingPatternString = '</em>';
 const blockDivOpeningPatternString = '<div class="slack_block">';
 const blockSpanOpeningPatternString = '<blockquote class="slack_block">';
-const blockSpanClosingPatternString = "</blockquote>";
-const paragraphBreak = XRegExp.cache("\\n\\n", "nsg");
+const blockSpanClosingPatternString = '</blockquote>';
+const paragraphBreak = XRegExp.cache('\\n\\n', 'nsg');
 const paragraphBreakTagLiteral = '<div class="slack_line_break"></div>';
-const lineBreakTagLiteral = "<br>";
-const newlineRegExp = XRegExp.cache("\\n", "nsg");
-const whitespaceRegExp = XRegExp.cache("\\s", "ns");
+const lineBreakTagLiteral = '<br>';
+const newlineRegExp = XRegExp.cache('\\n', 'nsg');
+const whitespaceRegExp = XRegExp.cache('\\s', 'ns');
 const slackMrkdwnCharactersRegExp = XRegExp.cache(
-  "(?<mrkdwnCharacter>[\\*\\`\\~\\_]|&gt;)",
-  "ng"
+  '(?<mrkdwnCharacter>[\\*\\`\\~\\_]|&gt;)',
+  'ng'
 );
 const slackMrkdwnPercentageCharsMap = {
-  "*": "%2A",
-  "&gt;": "%26gt;",
-  "`": "%27",
-  "~": "%7E",
-  _: "%5F",
+  '*': '%2A',
+  '&gt;': '%26gt;',
+  '`': '%27',
+  '~': '%7E',
+  _: '%5F'
 };
 // https://api.slack.com/docs/message-formatting
 const userMentionRegExp = XRegExp.cache(
-  "<@(((?<userID>[U|W][^|>]+)(\\|(?<userName>[^>]+))?)|(?<userNameWithoutID>[^>]+))>",
-  "ng"
+  '<@(((?<userID>[U|W][^|>]+)(\\|(?<userName>[^>]+))?)|(?<userNameWithoutID>[^>]+))>',
+  'ng'
 );
 const channelMentionRegExp = XRegExp.cache(
-  "<#(((?<channelID>C[^|>]+)(\\|(?<channelName>[^>]*))?)|(?<channelNameWithoutID>[^>]+))>",
-  "ng"
+  '<#(((?<channelID>C[^|>]+)(\\|(?<channelName>[^>]*))?)|(?<channelNameWithoutID>[^>]+))>',
+  'ng'
 );
 const linkRegExp = XRegExp.cache(
-  "<(?<linkUrl>(https?|s3|ftp):[^|>]+)(\\|(?<linkHtml>[^>]+))?>",
-  "ng"
+  '<(?<linkUrl>(https?|s3|ftp):[^|>]+)(\\|(?<linkHtml>[^>]+))?>',
+  'ng'
 );
 const mailToRegExp = XRegExp.cache(
-  "<mailto:(?<mailTo>[^|>]+)(\\|(?<mailToName>[^>]+))?>",
-  "ng"
+  '<mailto:(?<mailTo>[^|>]+)(\\|(?<mailToName>[^>]+))?>',
+  'ng'
 );
 const telRegExp = XRegExp.cache(
-  "<tel:(?<tel>[^|>]+)(\\|(?<telName>[^>]+))?>",
-  "ng"
+  '<tel:(?<tel>[^|>]+)(\\|(?<telName>[^>]+))?>',
+  'ng'
 );
 const subteamCommandRegExp = XRegExp.cache(
-  "<!subteam\\^(?<subteamID>S[^|>]+)(\\|(?<subteamName>[^>]+))?>",
-  "ng"
+  '<!subteam\\^(?<subteamID>S[^|>]+)(\\|(?<subteamName>[^>]+))?>',
+  'ng'
 );
 const commandRegExp = XRegExp.cache(
-  "<!(?<commandLiteral>[^|>]+)(\\|(?<commandName>[^>]+))?>",
-  "ng"
+  '<!(?<commandLiteral>[^|>]+)(\\|(?<commandName>[^>]+))?>',
+  'ng'
 );
-const knownCommands = ["here", "channel", "group", "everyone"];
+const knownCommands = ['here', 'channel', 'group', 'everyone'];
 
 const escapeTags = (string) =>
-  ["&lt;", string.substring(1, string.length - 1), "&gt;"].join("");
+  ['&lt;', string.substring(1, string.length - 1), '&gt;'].join('');
 
 const replaceUserName = (users) => (match) => {
   const userName =
@@ -137,22 +137,22 @@ const replaceUserGroupName = (usergroups) => (match) => {
 
 const buildOpeningDelimiterRegExp = (
   delimiter,
-  { prefixPattern = "", spacePadded = false, escapeDelimiter = true } = {}
+  { prefixPattern = '', spacePadded = false, escapeDelimiter = true } = {}
 ) => {
   const escapedDelimiter = escapeDelimiter
     ? XRegExp.escape(delimiter)
     : delimiter;
   const prefixRegexPart = spacePadded
-    ? "(?<openingCapturedWhitespace>^|\\s|[\"'])"
-    : "";
+    ? '(?<openingCapturedWhitespace>^|\\s|["\'])'
+    : '';
   return XRegExp.cache(
     `${prefixRegexPart}${prefixPattern}${escapedDelimiter}`,
-    "ns"
+    'ns'
   );
 };
 
 // Chars allowed after closing * _ ~ so "*bold*,", "*bold*." and "*label*: " still match.
-const closingDelimiterAllowedChars = "\"',.:!?";
+const closingDelimiterAllowedChars = '"\',.:!?';
 
 // We can't perform negative lookahead to capture the last consecutive delimiter
 // since delimiters can be more than once character long
@@ -165,8 +165,8 @@ const buildClosingDelimiterRegExp = (
     : delimiter;
   const suffixRegexPart = spacePadded
     ? `(?<closingCapturedWhitespace>\\s|[${closingDelimiterAllowedChars}]|$)`
-    : "";
-  return XRegExp.cache(`${escapedDelimiter}${suffixRegexPart}`, "ns");
+    : '';
+  return XRegExp.cache(`${escapedDelimiter}${suffixRegexPart}`, 'ns');
 };
 
 const incrementWindows = (windows, offset) => {
@@ -195,11 +195,11 @@ const replaceInWindows = (
 
   const openingDelimiterRegExp = buildOpeningDelimiterRegExp(delimiterLiteral, {
     spacePadded,
-    prefixPattern: options.prefixPattern,
+    prefixPattern: options.prefixPattern
   });
   const closingDelimiterRegExp = asymmetric
     ? buildClosingDelimiterRegExp(options.endingPattern, {
-        escapeDelimiter: false,
+        escapeDelimiter: false
       })
     : buildClosingDelimiterRegExp(delimiterLiteral, { spacePadded });
 
@@ -209,7 +209,7 @@ const replaceInWindows = (
   ) {
     return {
       text: text,
-      windows: closedTagWindows,
+      windows: closedTagWindows
     };
   }
 
@@ -283,11 +283,11 @@ const replaceInWindows = (
       const textAfterDelimiter = text.slice(afterDelimitersIndex);
 
       const openingReplacementString = `${
-        spacePadded ? openingMatch.openingCapturedWhitespace : ""
+        spacePadded ? openingMatch.openingCapturedWhitespace : ''
       }${replacementOpeningLiteral}`;
       const closingReplacementString = `${replacementClosingLiteral}${
-        spacePadded ? closingMatch.closingCapturedWhitespace : ""
-      }${asymmetric ? closingMatch[0] : ""}`;
+        spacePadded ? closingMatch.closingCapturedWhitespace : ''
+      }${asymmetric ? closingMatch[0] : ''}`;
 
       const textBetweenDelimiters = text.slice(
         openingMatch.index + openingMatch[0].length,
@@ -323,8 +323,8 @@ const replaceInWindows = (
       const replacedDelimiterText = [
         openingReplacementString,
         replacedTextBetweenDelimiters,
-        closingReplacementString,
-      ].join("");
+        closingReplacementString
+      ].join('');
 
       const delimiterReplacementLength =
         delimiterLiteral.length + closingDelimiterLength;
@@ -347,7 +347,7 @@ const replaceInWindows = (
         currentClosedTagWindow[1] = openingMatch.index;
         closedTagWindows.splice(nextWindowIndex, 0, [
           closingMatch.index + closingDelimiterLength + windowOffset,
-          newUpperWindowLimit,
+          newUpperWindowLimit
         ]);
       } else {
         currentClosedTagWindow[1] = newUpperWindowLimit;
@@ -360,7 +360,7 @@ const replaceInWindows = (
 
       return replaceInWindows(
         [textBeforeDelimiter, replacedDelimiterText, textAfterDelimiter].join(
-          ""
+          ''
         ),
         delimiterLiteral,
         replacementOpeningLiteral,
@@ -396,27 +396,27 @@ const replaceParagraphBreaks = (text) => {
  * 4. The existing replaceInWindows function doesn't handle this multi-line scenario well
  */
 const replaceBlockQuotes = (text) => {
-  const lines = text.split("\n");
+  const lines = text.split('\n');
 
   const processedLines = lines.map((line) => {
-    if (line.trim().startsWith("&gt;")) {
+    if (line.trim().startsWith('&gt;')) {
       return replaceInWindows(
         line,
-        "&gt;",
+        '&gt;',
         blockSpanOpeningPatternString,
         blockSpanClosingPatternString,
         [[0, line.length]],
         {
-          prefixPattern: "^\\s*",
-          endingPattern: "\\n|$",
-          maxReplacements: 1,
+          prefixPattern: '^\\s*',
+          endingPattern: '\\n|$',
+          maxReplacements: 1
         }
       ).text;
     }
     return line;
   });
 
-  return processedLines.join("\n");
+  return processedLines.join('\n');
 };
 
 const expandText = (text, skipParagraphBreaks = false) => {
@@ -424,7 +424,7 @@ const expandText = (text, skipParagraphBreaks = false) => {
   expandedTextAndWindows = { text: text, windows: [[0, text.length]] };
   expandedTextAndWindows = replaceInWindows(
     expandedTextAndWindows.text,
-    "```",
+    '```',
     codeDivOpeningPatternString + openingCodePatternString,
     closingCodePatternString + closingDivPatternString,
     expandedTextAndWindows.windows,
@@ -432,7 +432,7 @@ const expandText = (text, skipParagraphBreaks = false) => {
   );
   expandedTextAndWindows = replaceInWindows(
     expandedTextAndWindows.text,
-    "`",
+    '`',
     codeSpanOpeningPatternString + openingCodePatternString,
     closingCodePatternString + closingSpanPatternString,
     expandedTextAndWindows.windows,
@@ -440,7 +440,7 @@ const expandText = (text, skipParagraphBreaks = false) => {
   );
   expandedTextAndWindows = replaceInWindows(
     expandedTextAndWindows.text,
-    "*",
+    '*',
     boldOpeningPatternString,
     boldClosingPatternString,
     expandedTextAndWindows.windows,
@@ -448,7 +448,7 @@ const expandText = (text, skipParagraphBreaks = false) => {
   );
   expandedTextAndWindows = replaceInWindows(
     expandedTextAndWindows.text,
-    "~",
+    '~',
     strikethroughOpeningPatternString,
     strikethroughClosingPatternString,
     expandedTextAndWindows.windows,
@@ -456,7 +456,7 @@ const expandText = (text, skipParagraphBreaks = false) => {
   );
   expandedTextAndWindows = replaceInWindows(
     expandedTextAndWindows.text,
-    "_",
+    '_',
     italicOpeningPatternString,
     italicClosingPatternString,
     expandedTextAndWindows.windows,
@@ -464,15 +464,15 @@ const expandText = (text, skipParagraphBreaks = false) => {
   );
   expandedTextAndWindows = replaceInWindows(
     expandedTextAndWindows.text,
-    "&gt;&gt;&gt;",
+    '&gt;&gt;&gt;',
     blockDivOpeningPatternString,
     closingDivPatternString,
     expandedTextAndWindows.windows,
     {
-      prefixPattern: "^\\s*",
-      endingPattern: "$",
+      prefixPattern: '^\\s*',
+      endingPattern: '$',
       replaceNewlines: true,
-      maxReplacements: 100,
+      maxReplacements: 100
     }
   );
 
@@ -508,7 +508,7 @@ const escapeForSlack = (text, options = {}) => {
    * matching them with markdown delimiters
    */
   const textWithEncodedLink = XRegExp.replace(
-    text || "",
+    text || '',
     linkRegExp,
     (match) => {
       const encodedLink = encodeSlackMrkdwnCharactersInLinks(match.linkUrl);
@@ -525,7 +525,7 @@ const escapeForSlack = (text, options = {}) => {
     // whitespace (e.g. "   • item" produced by html-to-mrkdwn-ts when converting
     // HTML lists to Slack mrkdwn).  All indentation is stripped so that marked
     // always receives a flat "- item" list regardless of the source format.
-    normalizedText = normalizedText.replace(/^\s*•\s+/gm, "- ");
+    normalizedText = normalizedText.replace(/^\s*•\s+/gm, '- ');
 
     // With marked's `breaks: true`, a list block is only recognised when it is
     // preceded by a blank line.  If regular (non-list, non-blank) content
@@ -533,13 +533,13 @@ const escapeForSlack = (text, options = {}) => {
     // marked treats the "- " lines as a line-break continuation of the
     // paragraph instead of opening a <ul> element.  Insert a blank line
     // whenever non-list content is directly followed by a list item.
-    normalizedText = normalizedText.replace(/^(?!- )(.+)\n(- )/gm, "$1\n\n$2");
+    normalizedText = normalizedText.replace(/^(?!- )(.+)\n(- )/gm, '$1\n\n$2');
 
     // Slack stores blank lines as lines containing only whitespace (e.g. "  ").
     // When passed directly to marked, such lines are treated as block separators
     // and produce no visible output. Replace them with &nbsp; wrapped in blank
     // lines so marked emits a visible empty paragraph.
-    normalizedText = normalizedText.replace(/^[ \t]+$/gm, "\n&nbsp;\n");
+    normalizedText = normalizedText.replace(/^[ \t]+$/gm, '\n&nbsp;\n');
 
     // With marked's `breaks: true`, plain text that immediately follows the
     // last list item (no blank line) is treated as a continuation of the last
@@ -548,7 +548,7 @@ const escapeForSlack = (text, options = {}) => {
     // closes the list and opens a fresh paragraph instead.
     normalizedText = normalizedText.replace(
       /^(- [^\n]*)(\n)(?=[^\n-\s])/gm,
-      "$1$2\n"
+      '$1$2\n'
     );
   }
   // When normalizing for markdown rendering, skip converting \n\n to
@@ -574,12 +574,12 @@ const escapeForSlack = (text, options = {}) => {
             match.mailTo
           }" target="&#95;blank" rel="noopener noreferrer">${
             match.mailToName || match.mailTo
-          }</a>`,
+          }</a>`
       ],
       [
         telRegExp,
         (match) =>
-          `<a href="tel:${match.tel}">${match.telName || match.tel}</a>`,
+          `<a href="tel:${match.tel}">${match.telName || match.tel}</a>`
       ],
       [subteamCommandRegExp, replaceUserGroupName(usergroups)],
       [
@@ -587,7 +587,7 @@ const escapeForSlack = (text, options = {}) => {
         (match) => {
           if (
             match.commandLiteral &&
-            match.commandLiteral.startsWith("subteam")
+            match.commandLiteral.startsWith('subteam')
           ) {
             return match.toString();
           } else if (knownCommands.includes(match.commandLiteral)) {
@@ -596,8 +596,8 @@ const escapeForSlack = (text, options = {}) => {
             return `<${match.commandName}>`;
           }
           return `<${match.commandLiteral}>`;
-        },
-      ],
+        }
+      ]
     ]),
     customEmoji,
     skipEmojiSpans
@@ -695,7 +695,7 @@ const escapeForSlackWithMarkdown = (text, options = {}) => {
     text,
     Object.assign({}, options, {
       markdown: true,
-      normalizeForMarkdownRendering: true,
+      normalizeForMarkdownRendering: true
     })
   );
 };
@@ -708,29 +708,29 @@ const buildSlackHawkDownRegExps = () => {
     mailToRegExp: mailToRegExp,
     telRegExp: telRegExp,
     subteamCommandRegExp: subteamCommandRegExp,
-    boldOpeningDelimiterRegExp: buildOpeningDelimiterRegExp("*"),
-    boldClosingDelimiterRegExp: buildClosingDelimiterRegExp("*"),
-    italicsOpeningDelimiterRegExp: buildOpeningDelimiterRegExp("_", {
-      spacePadded: true,
+    boldOpeningDelimiterRegExp: buildOpeningDelimiterRegExp('*'),
+    boldClosingDelimiterRegExp: buildClosingDelimiterRegExp('*'),
+    italicsOpeningDelimiterRegExp: buildOpeningDelimiterRegExp('_', {
+      spacePadded: true
     }),
-    italicsClosingDelimiterRegExp: buildClosingDelimiterRegExp("_", {
-      spacePadded: true,
+    italicsClosingDelimiterRegExp: buildClosingDelimiterRegExp('_', {
+      spacePadded: true
     }),
-    strikethroughOpeningDelimiterRegExp: buildOpeningDelimiterRegExp("~"),
-    strikethroughClosingDelimiterRegExp: buildClosingDelimiterRegExp("~"),
-    blockDivOpeningDelimiterRegExp: buildOpeningDelimiterRegExp("&gt;&gt;&gt;"),
-    blockDivClosingDelimiterRegExp: buildClosingDelimiterRegExp("$", {
-      escapeDelimiter: false,
+    strikethroughOpeningDelimiterRegExp: buildOpeningDelimiterRegExp('~'),
+    strikethroughClosingDelimiterRegExp: buildClosingDelimiterRegExp('~'),
+    blockDivOpeningDelimiterRegExp: buildOpeningDelimiterRegExp('&gt;&gt;&gt;'),
+    blockDivClosingDelimiterRegExp: buildClosingDelimiterRegExp('$', {
+      escapeDelimiter: false
     }),
-    blockSpanOpeningDelimiterRegExp: buildOpeningDelimiterRegExp("&gt;"),
-    blockSpanClosingDelimiterRegExp: buildClosingDelimiterRegExp("\\n|$", {
-      escapeDelimiter: false,
-    }),
+    blockSpanOpeningDelimiterRegExp: buildOpeningDelimiterRegExp('&gt;'),
+    blockSpanClosingDelimiterRegExp: buildClosingDelimiterRegExp('\\n|$', {
+      escapeDelimiter: false
+    })
   };
 };
 
 module.exports = {
   escapeForSlack: escapeForSlack,
   escapeForSlackWithMarkdown: escapeForSlackWithMarkdown,
-  buildSlackHawkDownRegExps: buildSlackHawkDownRegExps,
+  buildSlackHawkDownRegExps: buildSlackHawkDownRegExps
 };
