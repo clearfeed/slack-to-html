@@ -375,18 +375,15 @@ describe('markdown', () => {
     )
   })
 
-  it('should preserve paragraph breaks for the markdown renderer', () => {
-    // normalizeForMarkdownRendering skips replaceParagraphBreaks so that \n\n
-    // is passed through intact for the downstream markdown renderer (e.g. marked)
-    // to handle paragraph spacing itself.
+  it('should convert the paragraph breaks to slack line breaks', () => {
     escapeForSlackWithMarkdown('paragraph 1\n\nparagraph 2').should.equal(
-      'paragraph 1\n\nparagraph 2'
+      'paragraph 1<div class="slack_line_break"></div>paragraph 2'
     )
   })
 
   it('should correctly handle paragraph breaks between blockquotes', () => {
     escapeForSlackWithMarkdown('&gt; line 1\n\n&gt; line 2').should.equal(
-      '<blockquote class="slack_block"> line 1</blockquote>\n\n<blockquote class="slack_block"> line 2</blockquote>'
+      '<blockquote class="slack_block"> line 1</blockquote><div class="slack_line_break"></div><blockquote class="slack_block"> line 2</blockquote>'
     )
   })
 
@@ -397,11 +394,9 @@ describe('markdown', () => {
       )
     })
 
-    it('should preserve paragraph breaks when skipParagraphBreaks is false because normalizeForMarkdownRendering takes precedence', () => {
-      // normalizeForMarkdownRendering always skips replaceParagraphBreaks regardless
-      // of skipParagraphBreaks, so \n\n is kept intact for the markdown renderer.
+    it('should process paragraph breaks normally when skipParagraphBreaks is false', () => {
       escapeForSlackWithMarkdown('paragraph 1\n\nparagraph 2', { skipParagraphBreaks: false }).should.equal(
-        'paragraph 1\n\nparagraph 2'
+        'paragraph 1<div class="slack_line_break"></div>paragraph 2'
       )
     })
 
@@ -423,11 +418,9 @@ describe('markdown', () => {
       )
     })
 
-    it('should preserve multiple paragraph breaks with skipParagraphBreaks false because normalizeForMarkdownRendering takes precedence', () => {
-      // normalizeForMarkdownRendering always skips replaceParagraphBreaks regardless
-      // of skipParagraphBreaks, so \n\n is kept intact for the markdown renderer.
+    it('should handle multiple paragraph breaks with skipParagraphBreaks false', () => {
       escapeForSlackWithMarkdown('para 1\n\npara 2\n\npara 3', { skipParagraphBreaks: false }).should.equal(
-        'para 1\n\npara 2\n\npara 3'
+        'para 1<div class="slack_line_break"></div>para 2<div class="slack_line_break"></div>para 3'
       )
     })
   })
