@@ -8,7 +8,7 @@ const expandEmoji = (text, customEmoji = {}, skipEmojiSpans = false) => {
     let key = originalKey;
     let emojiValue;
 
-    for (; ;) {
+    for (;;) {
       emojiValue = allEmoji[key];
       if (!emojiValue || !emojiValue.match(aliasPattern)) {
         break;
@@ -56,7 +56,10 @@ const paragraphBreakTagLiteral = '<div class="slack_line_break"></div>';
 const lineBreakTagLiteral = '<br>';
 const newlineRegExp = XRegExp.cache('\\n', 'nsg');
 const whitespaceRegExp = XRegExp.cache('\\s', 'ns');
-const slackMrkdwnCharactersRegExp = XRegExp.cache('(?<mrkdwnCharacter>[\\*\\`\\~\\_]|&gt;)', 'ng');
+const slackMrkdwnCharactersRegExp = XRegExp.cache(
+  '(?<mrkdwnCharacter>[\\*\\`\\~\\_]|&gt;)',
+  'ng'
+);
 const slackMrkdwnPercentageCharsMap = {
   '*': '%2A',
   '&gt;': '%26gt;',
@@ -117,7 +120,9 @@ const replaceChannelName = (channels) => (match) => {
   if (channelName) {
     return `#${channelName}`;
   }
-  return escapeTags(match.channelID ? `<#${match.channelID}>` : match.toString());
+  return escapeTags(
+    match.channelID ? `<#${match.channelID}>` : match.toString()
+  );
 };
 
 const replaceUserGroupName = (usergroups) => (match) => {
@@ -137,7 +142,9 @@ const buildOpeningDelimiterRegExp = (
   const escapedDelimiter = escapeDelimiter
     ? XRegExp.escape(delimiter)
     : delimiter;
-  const prefixRegexPart = spacePadded ? '(?<openingCapturedWhitespace>^|\\s|["\'])' : '';
+  const prefixRegexPart = spacePadded
+    ? '(?<openingCapturedWhitespace>^|\\s|["\'])'
+    : '';
   return XRegExp.cache(
     `${prefixRegexPart}${prefixPattern}${escapedDelimiter}`,
     'ns'
@@ -159,10 +166,7 @@ const buildClosingDelimiterRegExp = (
   const suffixRegexPart = spacePadded
     ? `(?<closingCapturedWhitespace>\\s|[${closingDelimiterAllowedChars}]|$)`
     : '';
-  return XRegExp.cache(
-    `${escapedDelimiter}${suffixRegexPart}`,
-    'ns'
-  );
+  return XRegExp.cache(`${escapedDelimiter}${suffixRegexPart}`, 'ns');
 };
 
 const incrementWindows = (windows, offset) => {
@@ -191,12 +195,12 @@ const replaceInWindows = (
 
   const openingDelimiterRegExp = buildOpeningDelimiterRegExp(delimiterLiteral, {
     spacePadded,
-    prefixPattern: options.prefixPattern,
+    prefixPattern: options.prefixPattern
   });
   const closingDelimiterRegExp = asymmetric
     ? buildClosingDelimiterRegExp(options.endingPattern, {
-      escapeDelimiter: false,
-    })
+        escapeDelimiter: false
+      })
     : buildClosingDelimiterRegExp(delimiterLiteral, { spacePadded });
 
   if (
@@ -205,7 +209,7 @@ const replaceInWindows = (
   ) {
     return {
       text: text,
-      windows: closedTagWindows,
+      windows: closedTagWindows
     };
   }
 
@@ -238,7 +242,7 @@ const replaceInWindows = (
     // Allow matching the end of the string if on the last window
     const closingMatchMaxIndex =
       (tagWindowIndex === closedTagWindows.length - 1 &&
-        tagWindowEndIndex === text.length
+      tagWindowEndIndex === text.length
         ? tagWindowEndIndex + 1
         : tagWindowEndIndex) -
       closingDelimiterLength +
@@ -278,10 +282,12 @@ const replaceInWindows = (
       const textBeforeDelimiter = text.slice(0, openingMatch.index);
       const textAfterDelimiter = text.slice(afterDelimitersIndex);
 
-      const openingReplacementString = `${spacePadded ? openingMatch.openingCapturedWhitespace : ''
-        }${replacementOpeningLiteral}`;
-      const closingReplacementString = `${replacementClosingLiteral}${spacePadded ? closingMatch.closingCapturedWhitespace : ''
-        }${asymmetric ? closingMatch[0] : ''}`;
+      const openingReplacementString = `${
+        spacePadded ? openingMatch.openingCapturedWhitespace : ''
+      }${replacementOpeningLiteral}`;
+      const closingReplacementString = `${replacementClosingLiteral}${
+        spacePadded ? closingMatch.closingCapturedWhitespace : ''
+      }${asymmetric ? closingMatch[0] : ''}`;
 
       const textBetweenDelimiters = text.slice(
         openingMatch.index + openingMatch[0].length,
@@ -308,16 +314,16 @@ const replaceInWindows = (
 
       const replacedTextBetweenDelimiters = replaceNewlines
         ? XRegExp.replace(
-          textBetweenDelimiters,
-          newlineRegExp,
-          lineBreakTagLiteral
-        )
+            textBetweenDelimiters,
+            newlineRegExp,
+            lineBreakTagLiteral
+          )
         : textBetweenDelimiters;
 
       const replacedDelimiterText = [
         openingReplacementString,
         replacedTextBetweenDelimiters,
-        closingReplacementString,
+        closingReplacementString
       ].join('');
 
       const delimiterReplacementLength =
@@ -341,7 +347,7 @@ const replaceInWindows = (
         currentClosedTagWindow[1] = openingMatch.index;
         closedTagWindows.splice(nextWindowIndex, 0, [
           closingMatch.index + closingDelimiterLength + windowOffset,
-          newUpperWindowLimit,
+          newUpperWindowLimit
         ]);
       } else {
         currentClosedTagWindow[1] = newUpperWindowLimit;
@@ -403,7 +409,7 @@ const replaceBlockQuotes = (text) => {
         {
           prefixPattern: '^\\s*',
           endingPattern: '\\n|$',
-          maxReplacements: 1,
+          maxReplacements: 1
         }
       ).text;
     }
@@ -438,7 +444,7 @@ const expandText = (text, skipParagraphBreaks = false) => {
     boldOpeningPatternString,
     boldClosingPatternString,
     expandedTextAndWindows.windows,
-    { maxReplacements: 100, spacePadded: true, }
+    { maxReplacements: 100, spacePadded: true }
   );
   expandedTextAndWindows = replaceInWindows(
     expandedTextAndWindows.text,
@@ -446,7 +452,7 @@ const expandText = (text, skipParagraphBreaks = false) => {
     strikethroughOpeningPatternString,
     strikethroughClosingPatternString,
     expandedTextAndWindows.windows,
-    { maxReplacements: 100, spacePadded: true, }
+    { maxReplacements: 100, spacePadded: true }
   );
   expandedTextAndWindows = replaceInWindows(
     expandedTextAndWindows.text,
@@ -466,15 +472,24 @@ const expandText = (text, skipParagraphBreaks = false) => {
       prefixPattern: '^\\s*',
       endingPattern: '$',
       replaceNewlines: true,
-      maxReplacements: 100,
+      maxReplacements: 100
     }
   );
 
   const processedText = replaceBlockQuotes(expandedTextAndWindows.text);
-  return skipParagraphBreaks ? processedText : replaceParagraphBreaks(processedText);
+  return skipParagraphBreaks
+    ? processedText
+    : replaceParagraphBreaks(processedText);
 };
 
-const encodeSlackMrkdwnCharactersInLinks = (link) => XRegExp.replace(link, slackMrkdwnCharactersRegExp, (match) => slackMrkdwnPercentageCharsMap[match.mrkdwnCharacter] || match.mrkdwnCharacter);
+const encodeSlackMrkdwnCharactersInLinks = (link) =>
+  XRegExp.replace(
+    link,
+    slackMrkdwnCharactersRegExp,
+    (match) =>
+      slackMrkdwnPercentageCharsMap[match.mrkdwnCharacter] ||
+      match.mrkdwnCharacter
+  );
 const escapeForSlack = (text, options = {}) => {
   const customEmoji = options.customEmoji || {};
   const users = options.users || {};
@@ -484,21 +499,80 @@ const escapeForSlack = (text, options = {}) => {
   const skipEmojiSpans = options.skipEmojiSpans || false;
   const skipParagraphBreaks = options.skipParagraphBreaks || false;
   const convertNewlinesToBr = options.convertNewlinesToBr || false;
+  const normalizeForMarkdownRendering =
+    options.normalizeForMarkdownRendering || false;
   /**
    * Links can contain characters such as *_&~` that are a part of the character set used by
    * Slack Mrkdwn. So, before converting Slack Mrkdwn to HTML we need to encode these characters
    * We use &#95; instead of _ in HTML attributes to prevent markdown processor from
    * matching them with markdown delimiters
-  */
-  const textWithEncodedLink = XRegExp.replace(text || '',
+   */
+  const textWithEncodedLink = XRegExp.replace(
+    text || '',
     linkRegExp,
     (match) => {
       const encodedLink = encodeSlackMrkdwnCharactersInLinks(match.linkUrl);
-      return `<a href="${encodedLink
-        }" target="&#95;blank" rel="noopener noreferrer">${match.linkHtml || encodedLink
-        }</a>`;
+      return `<a href="${encodedLink}" target="&#95;blank" rel="noopener noreferrer">${
+        match.linkHtml || encodedLink
+      }</a>`;
+    }
+  );
+  let normalizedText = textWithEncodedLink;
+  if (normalizeForMarkdownRendering) {
+    // Protect fenced code blocks from normalization regexes
+    const codePlaceholders = [];
+    normalizedText = normalizedText.replace(/```[\s\S]*?```/g, (match) => {
+      codePlaceholders.push(match);
+      return `%%CODEBLOCK_${codePlaceholders.length - 1}%%`;
     });
-  const expandedText = markdown ? expandText(textWithEncodedLink, skipParagraphBreaks) : textWithEncodedLink;
+
+    // Convert bullet-character lines (stored by the backend as "• item") to
+    // markdown list syntax so renderMarkdown produces indented <ul> elements.
+    // The regex uses ^\s* to handle bullets that may be prefixed with leading
+    // whitespace (e.g. "   • item" produced by html-to-mrkdwn-ts when converting
+    // HTML lists to Slack mrkdwn).  All indentation is stripped so that marked
+    // always receives a flat "- item" list regardless of the source format.
+    normalizedText = normalizedText.replace(/^\s*•\s+/gm, '- ');
+
+    // With marked's `breaks: true`, a list block is only recognised when it is
+    // preceded by a blank line.  If regular (non-list, non-blank) content
+    // immediately precedes the first list item with only a single newline,
+    // marked treats the "- " lines as a line-break continuation of the
+    // paragraph instead of opening a <ul> element.  Insert a blank line
+    // whenever non-list content is directly followed by a list item.
+    normalizedText = normalizedText.replace(/^(?!- )(.+)\n(- )/gm, '$1\n\n$2');
+
+    // Slack stores blank lines as lines containing only whitespace (e.g. "  ").
+    // When passed directly to marked, such lines are treated as block separators
+    // and produce no visible output. Replace them with &nbsp; wrapped in blank
+    // lines so marked emits a visible empty paragraph.
+    normalizedText = normalizedText.replace(/^[ \t]+$/gm, '\n&nbsp;\n');
+
+    // With marked's `breaks: true`, plain text that immediately follows the
+    // last list item (no blank line) is treated as a continuation of the last
+    // <li> and rendered indented inside the <ul>. Insert a blank line whenever
+    // a list item is directly followed by non-list, non-blank content so marked
+    // closes the list and opens a fresh paragraph instead.
+    normalizedText = normalizedText.replace(
+      /^(- [^\n]*)(\n)(?=[^\n-\s])/gm,
+      '$1$2\n'
+    );
+
+    // Restore fenced code blocks
+    normalizedText = normalizedText.replace(/%%CODEBLOCK_(\d+)%%/g, (_, i) => codePlaceholders[i]);
+  }
+  // When normalizing for markdown rendering, skip converting \n\n to
+  // <div class="slack_line_break"> inside expandText. The blank lines we
+  // inserted above (before/after list items) must be preserved so that the
+  // downstream markdown renderer (e.g. marked) can recognise list blocks.
+  // marked handles its own paragraph spacing, so the Slack-specific div is
+  // not needed in this code path.
+  const expandedText = markdown
+    ? expandText(
+        normalizedText,
+        normalizeForMarkdownRendering || skipParagraphBreaks
+      )
+    : normalizedText;
   const processedText = expandEmoji(
     XRegExp.replaceEach(expandedText, [
       [userMentionRegExp, replaceUserName(users)],
@@ -506,14 +580,16 @@ const escapeForSlack = (text, options = {}) => {
       [
         mailToRegExp,
         (match) =>
-          `<a href="mailto:${match.mailTo
-          }" target="&#95;blank" rel="noopener noreferrer">${match.mailToName || match.mailTo
-          }</a>`,
+          `<a href="mailto:${
+            match.mailTo
+          }" target="&#95;blank" rel="noopener noreferrer">${
+            match.mailToName || match.mailTo
+          }</a>`
       ],
       [
         telRegExp,
         (match) =>
-          `<a href="tel:${match.tel}">${match.telName || match.tel}</a>`,
+          `<a href="tel:${match.tel}">${match.telName || match.tel}</a>`
       ],
       [subteamCommandRegExp, replaceUserGroupName(usergroups)],
       [
@@ -530,8 +606,8 @@ const escapeForSlack = (text, options = {}) => {
             return `<${match.commandName}>`;
           }
           return `<${match.commandLiteral}>`;
-        },
-      ],
+        }
+      ]
     ]),
     customEmoji,
     skipEmojiSpans
@@ -563,6 +639,15 @@ const escapeForSlack = (text, options = {}) => {
  *   When true, all newline characters are converted to <br> tags.
  *   When false, all newline characters are preserved as-is.
  *   Useful for systems like Intercom that don't respect plain newline characters in HTML.
+ * @property {boolean} [normalizeForMarkdownRendering=false] - Whether to apply post-processing
+ *   normalizations that make the output suitable for rendering with a markdown processor (e.g. marked).
+ *   When true:
+ *   - Bullet-character lines ("• item") are converted to markdown list syntax ("- item").
+ *   - Lines containing only whitespace are replaced with "\n&nbsp;\n" so the markdown renderer
+ *     emits a visible empty paragraph instead of collapsing them.
+ *   - A blank line is inserted between a list item and any immediately following non-list,
+ *     non-blank line so the markdown renderer closes the list before starting a new paragraph.
+ *   Automatically set to true by escapeForSlackWithMarkdown.
  * Converts Slack-formatted text to HTML with markdown parsing enabled.
  *
  * It processes Slack's mrkdwn formatting (bold, italic, strikethrough,
@@ -616,7 +701,13 @@ const escapeForSlack = (text, options = {}) => {
  * // Returns: 'Line 1\n\nLine 2' (no div conversion)
  */
 const escapeForSlackWithMarkdown = (text, options = {}) => {
-  return escapeForSlack(text, Object.assign({}, options, { markdown: true }));
+  return escapeForSlack(
+    text,
+    Object.assign({}, options, {
+      markdown: true,
+      normalizeForMarkdownRendering: true
+    })
+  );
 };
 
 const buildSlackHawkDownRegExps = () => {
@@ -630,26 +721,26 @@ const buildSlackHawkDownRegExps = () => {
     boldOpeningDelimiterRegExp: buildOpeningDelimiterRegExp('*'),
     boldClosingDelimiterRegExp: buildClosingDelimiterRegExp('*'),
     italicsOpeningDelimiterRegExp: buildOpeningDelimiterRegExp('_', {
-      spacePadded: true,
+      spacePadded: true
     }),
     italicsClosingDelimiterRegExp: buildClosingDelimiterRegExp('_', {
-      spacePadded: true,
+      spacePadded: true
     }),
     strikethroughOpeningDelimiterRegExp: buildOpeningDelimiterRegExp('~'),
     strikethroughClosingDelimiterRegExp: buildClosingDelimiterRegExp('~'),
     blockDivOpeningDelimiterRegExp: buildOpeningDelimiterRegExp('&gt;&gt;&gt;'),
     blockDivClosingDelimiterRegExp: buildClosingDelimiterRegExp('$', {
-      escapeDelimiter: false,
+      escapeDelimiter: false
     }),
     blockSpanOpeningDelimiterRegExp: buildOpeningDelimiterRegExp('&gt;'),
     blockSpanClosingDelimiterRegExp: buildClosingDelimiterRegExp('\\n|$', {
-      escapeDelimiter: false,
-    }),
+      escapeDelimiter: false
+    })
   };
 };
 
 module.exports = {
   escapeForSlack: escapeForSlack,
   escapeForSlackWithMarkdown: escapeForSlackWithMarkdown,
-  buildSlackHawkDownRegExps: buildSlackHawkDownRegExps,
+  buildSlackHawkDownRegExps: buildSlackHawkDownRegExps
 };
