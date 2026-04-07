@@ -519,6 +519,13 @@ const escapeForSlack = (text, options = {}) => {
   );
   let normalizedText = textWithEncodedLink;
   if (normalizeForMarkdownRendering) {
+    // Protect fenced code blocks from normalization regexes
+    const codePlaceholders = [];
+    normalizedText = normalizedText.replace(/```[\s\S]*?```/g, (match) => {
+      codePlaceholders.push(match);
+      return `%%CODEBLOCK_${codePlaceholders.length - 1}%%`;
+    });
+
     // Convert bullet-character lines (stored by the backend as "• item") to
     // markdown list syntax so renderMarkdown produces indented <ul> elements.
     // The regex uses ^\s* to handle bullets that may be prefixed with leading
@@ -550,6 +557,9 @@ const escapeForSlack = (text, options = {}) => {
       /^(- [^\n]*)(\n)(?=[^\n-\s])/gm,
       '$1$2\n'
     );
+
+    // Restore fenced code blocks
+    normalizedText = normalizedText.replace(/%%CODEBLOCK_(\d+)%%/g, (_, i) => codePlaceholders[i]);
   }
   // When normalizing for markdown rendering, skip converting \n\n to
   // <div class="slack_line_break"> inside expandText. The blank lines we
