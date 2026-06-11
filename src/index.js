@@ -57,7 +57,7 @@ const lineBreakTagLiteral = '<br>';
 const newlineRegExp = XRegExp.cache('\\n', 'nsg');
 // Drop <br> tags adjacent to a block element (blockquote / div) to avoid a
 // spurious blank line, since the block already starts on its own line.
-const brBeforeBlockRegExp = XRegExp.cache('<br>(<blockquote|<div)', 'g');
+const brBeforeBlockRegExp = XRegExp.cache('<br>(<blockquote|<div)(?=\\s|>)', 'g');
 const brAfterBlockRegExp = XRegExp.cache('(</blockquote>|</div>)<br>', 'g');
 const nonBreakingSpaceLiteral = '&nbsp;';
 const tabWidth = 4;
