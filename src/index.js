@@ -55,6 +55,18 @@ const paragraphBreak = XRegExp.cache('\\n\\n', 'nsg');
 const paragraphBreakTagLiteral = '<div class="slack_line_break"></div>';
 const lineBreakTagLiteral = '<br>';
 const newlineRegExp = XRegExp.cache('\\n', 'nsg');
+// Drop <br> tags adjacent to a block element (blockquote / div) to avoid a
+// spurious blank line, since the block already starts on its own line.
+const brBeforeBlockRegExp = XRegExp.cache('<br>(<blockquote|<div)', 'g');
+const brAfterBlockRegExp = XRegExp.cache('(</blockquote>|</div>)<br>', 'g');
+const nonBreakingSpaceLiteral = '&nbsp;';
+const tabWidth = 4;
+const leadingWhitespaceRegExp = XRegExp.cache('^[ \\t]+', 'n');
+// Matches a blockquote line's prefix before its indentation: leading
+// whitespace, the raw `&gt;` markers (still un-tagged at this stage), and one
+// separator space. We leave this prefix untouched and convert only the
+// indentation that follows.
+const blockquotePrefixRegExp = XRegExp.cache('^\\s*(?:&gt;)+ ?', 'n');
 const whitespaceRegExp = XRegExp.cache('\\s', 'ns');
 const slackMrkdwnCharactersRegExp = XRegExp.cache('(?<mrkdwnCharacter>[\\*\\`\\~\\_]|&gt;)', 'ng');
 const slackMrkdwnPercentageCharsMap = {
@@ -382,36 +394,70 @@ const replaceParagraphBreaks = (text) => {
   return XRegExp.replace(text, paragraphBreak, paragraphBreakTagLiteral);
 };
 
+const mapLines = (text, mapLine) => text.split('\n').map(mapLine).join('\n');
+
+// Matches a blockquote line: optional leading whitespace, one or more `&gt;`
+// markers (each marker is one nesting level), then the quoted content.
+const blockQuoteLineRegExp = XRegExp.cache(
+  '^\\s*(?<markers>(?:&gt;)+)(?<content>.*)$',
+  'n'
+);
+
 /**
  * Custom logic for blockquotes is required because:
  * 1. Blockquotes can span multiple lines
  * 2. Each line of a blockquote starts with '>' (represented as '&gt;' in HTML)
  * 3. We need to wrap each blockquote line individually, rather than the entire block
  * 4. The existing replaceInWindows function doesn't handle this multi-line scenario well
+ *
+ * Consecutive `&gt;` markers indicate nesting depth (e.g. `&gt;&gt; x` is a
+ * quote nested one level deep), so the content is wrapped in that many
+ * blockquotes. Leading whitespace before the markers is dropped.
  */
-const replaceBlockQuotes = (text) => {
-  const lines = text.split('\n');
-
-  const processedLines = lines.map((line) => {
-    if (line.trim().startsWith('&gt;')) {
-      return replaceInWindows(
-        line,
-        '&gt;',
-        blockSpanOpeningPatternString,
-        blockSpanClosingPatternString,
-        [[0, line.length]],
-        {
-          prefixPattern: '^\\s*',
-          endingPattern: '\\n|$',
-          maxReplacements: 1,
-        }
-      ).text;
+const replaceBlockQuotes = (text) =>
+  mapLines(text, (line) => {
+    const match = XRegExp.exec(line, blockQuoteLineRegExp);
+    // An isolated marker with no content is left as-is (matches prior behaviour).
+    if (!match || match.content.length === 0) {
+      return line;
     }
-    return line;
+    const depth = match.markers.split('&gt;').length - 1;
+    return (
+      blockSpanOpeningPatternString.repeat(depth) +
+      match.content +
+      blockSpanClosingPatternString.repeat(depth)
+    );
   });
 
-  return processedLines.join('\n');
-};
+/**
+ * Preserves leading indentation, which HTML would otherwise collapse, by
+ * converting each line's leading whitespace into non-breaking spaces. 
+ * Runs before `replaceBlockQuotes` converts `&gt;` markers, so on a blockquote
+ * line we skip the prefix (whitespace + `&gt;`) and convert only the 
+ * indentation after it.
+ */
+const toNonBreakingSpaces = (whitespace) =>
+  whitespace
+    .split('')
+    .map((character) =>
+      character === '\t'
+        ? nonBreakingSpaceLiteral.repeat(tabWidth)
+        : nonBreakingSpaceLiteral
+    )
+    .join('');
+
+const preserveLeadingWhitespace = (text) =>
+  mapLines(text, (line) => {
+    const prefixMatch = XRegExp.exec(line, blockquotePrefixRegExp);
+    const prefix = prefixMatch ? prefixMatch[0] : '';
+    const remainder = line.slice(prefix.length);
+
+    const indentMatch = XRegExp.exec(remainder, leadingWhitespaceRegExp);
+    if (!indentMatch) {
+      return line;
+    }
+    return prefix + toNonBreakingSpaces(indentMatch[0]) + remainder.slice(indentMatch[0].length);
+  });
 
 const expandText = (text, skipParagraphBreaks = false) => {
   let expandedTextAndWindows;
@@ -470,7 +516,8 @@ const expandText = (text, skipParagraphBreaks = false) => {
     }
   );
 
-  const processedText = replaceBlockQuotes(expandedTextAndWindows.text);
+  const indentedText = preserveLeadingWhitespace(expandedTextAndWindows.text);
+  const processedText = replaceBlockQuotes(indentedText);
   return skipParagraphBreaks ? processedText : replaceParagraphBreaks(processedText);
 };
 
@@ -537,9 +584,15 @@ const escapeForSlack = (text, options = {}) => {
     skipEmojiSpans
   );
 
-  return convertNewlinesToBr
-    ? XRegExp.replace(processedText, newlineRegExp, lineBreakTagLiteral)
-    : processedText;
+  if (!convertNewlinesToBr) {
+    return processedText;
+  }
+  // Convert newlines to <br>, then drop the ones adjacent to block-level tags
+  // (blockquote / div) — those blocks already break the line, so a <br> there
+  // would render a spurious blank line (e.g. between consecutive blockquotes).
+  const textWithLineBreaks = XRegExp.replace(processedText, newlineRegExp, lineBreakTagLiteral);
+  const withoutBrBeforeBlock = XRegExp.replace(textWithLineBreaks, brBeforeBlockRegExp, '$1');
+  return XRegExp.replace(withoutBrBeforeBlock, brAfterBlockRegExp, '$1');
 };
 
 /**
@@ -560,7 +613,10 @@ const escapeForSlack = (text, options = {}) => {
  *   When true, double newlines (\n\n) are preserved as-is.
  *   When false, double newlines are converted to <div class="slack_line_break"></div>.
  * @property {boolean} [convertNewlinesToBr=false] - Whether to convert newline characters to <br> tags.
- *   When true, all newline characters are converted to <br> tags.
+ *   When true, newline characters are converted to <br> tags, except those
+ *   directly adjacent to a block-level element the library emits (blockquote or
+ *   div), since those blocks already break the line and a <br> would add a
+ *   spurious blank line.
  *   When false, all newline characters are preserved as-is.
  *   Useful for systems like Intercom that don't respect plain newline characters in HTML.
  * Converts Slack-formatted text to HTML with markdown parsing enabled.

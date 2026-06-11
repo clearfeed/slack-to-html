@@ -209,6 +209,65 @@ describe('markdown', () => {
         '<blockquote class="slack_block"> Multiline Quote 1 Line 1</blockquote>\n<blockquote class="slack_block"> Multiline Quote 1 Line 2</blockquote>\nNo quote\n<blockquote class="slack_block"> Multiline Quote 2 Line 1</blockquote>\n<blockquote class="slack_block"> Multiline Quote 2 Line 2</blockquote>\nNo Quote\n<blockquote class="slack_block"> Multiline Quote 3 Line 1</blockquote>\n<blockquote class="slack_block"> Multiline Quote 3 Line 2</blockquote>\n'
       )
     })
+
+    it('should render nested blockquotes for consecutive markers', () => {
+      escapeForSlackWithMarkdown('Double blockquote message\n&gt; Line 1\n&gt;&gt; Line 2').should.equal(
+        'Double blockquote message\n<blockquote class="slack_block"> Line 1</blockquote>\n<blockquote class="slack_block"><blockquote class="slack_block"> Line 2</blockquote></blockquote>'
+      )
+    })
+  })
+
+  describe('leading whitespace', () => {
+    it('should preserve leading spaces used for indentation', () => {
+      escapeForSlackWithMarkdown('1. Line 1\n    2. Line 2\n        3. Line 3').should.equal(
+        '1. Line 1\n&nbsp;&nbsp;&nbsp;&nbsp;2. Line 2\n&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3. Line 3'
+      )
+    })
+
+    it('should expand leading tabs to non-breaking spaces', () => {
+      escapeForSlackWithMarkdown('1. Line 1\n\t2. Line 2').should.equal(
+        '1. Line 1\n&nbsp;&nbsp;&nbsp;&nbsp;2. Line 2'
+      )
+    })
+
+    it('should not touch lines without leading whitespace', () => {
+      escapeForSlackWithMarkdown('hello world').should.equal('hello world')
+    })
+
+    it('should preserve indentation inside a blockquote while keeping the separator space literal', () => {
+      escapeForSlackWithMarkdown('&gt; 1. item\n&gt;     2. nested').should.equal(
+        '<blockquote class="slack_block"> 1. item</blockquote>\n<blockquote class="slack_block"> &nbsp;&nbsp;&nbsp;&nbsp;2. nested</blockquote>'
+      )
+    })
+
+    it('should preserve indentation inside a nested blockquote', () => {
+      escapeForSlackWithMarkdown('&gt;&gt;     2. nested').should.equal(
+        '<blockquote class="slack_block"><blockquote class="slack_block"> &nbsp;&nbsp;&nbsp;&nbsp;2. nested</blockquote></blockquote>'
+      )
+    })
+  })
+
+  describe('convertNewlinesToBr', () => {
+    it('should convert newlines between plain lines to <br>', () => {
+      escapeForSlackWithMarkdown('1. Line 1\n    a. Line 2', { convertNewlinesToBr: true }).should.equal(
+        '1. Line 1<br>&nbsp;&nbsp;&nbsp;&nbsp;a. Line 2'
+      )
+    })
+
+    it('should not insert <br> between consecutive blockquotes', () => {
+      escapeForSlackWithMarkdown('&gt; a\n&gt; b', { convertNewlinesToBr: true }).should.equal(
+        '<blockquote class="slack_block"> a</blockquote><blockquote class="slack_block"> b</blockquote>'
+      )
+    })
+
+    it('should not insert <br> adjacent to a blockquote or block element', () => {
+      escapeForSlackWithMarkdown('hello\n&gt; quoted', { convertNewlinesToBr: true }).should.equal(
+        'hello<blockquote class="slack_block"> quoted</blockquote>'
+      )
+      escapeForSlackWithMarkdown('```code```\nafter', { convertNewlinesToBr: true }).should.equal(
+        '<div class="slack_code"><code>code</code></div>after'
+      )
+    })
   })
 
   describe('URL links', () => {
