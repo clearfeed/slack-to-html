@@ -403,6 +403,10 @@ const blockQuoteLineRegExp = XRegExp.cache(
   'n'
 );
 
+// We only render nesting up to this many levels. Any `&gt;` markers beyond it
+// are left as literal text in the quoted content.
+const maxBlockQuoteDepth = 2;
+
 /**
  * Custom logic for blockquotes is required because:
  * 1. Blockquotes can span multiple lines
@@ -412,7 +416,9 @@ const blockQuoteLineRegExp = XRegExp.cache(
  *
  * Consecutive `&gt;` markers indicate nesting depth (e.g. `&gt;&gt; x` is a
  * quote nested one level deep), so the content is wrapped in that many
- * blockquotes. Leading whitespace before the markers is dropped.
+ * blockquotes. Leading whitespace before the markers is dropped. Nesting is
+ * capped at `maxBlockQuoteDepth`; any deeper `&gt;` markers are kept verbatim
+ * at the start of the content rather than producing more blockquotes.
  */
 const replaceBlockQuotes = (text) =>
   mapLines(text, (line) => {
@@ -421,9 +427,12 @@ const replaceBlockQuotes = (text) =>
     if (!match || match.content.length === 0) {
       return line;
     }
-    const depth = match.markers.split('&gt;').length - 1;
+    const markerCount = match.markers.split('&gt;').length - 1;
+    const depth = Math.min(markerCount, maxBlockQuoteDepth);
+    const literalMarkers = '&gt;'.repeat(markerCount - depth);
     return (
       blockSpanOpeningPatternString.repeat(depth) +
+      literalMarkers +
       match.content +
       blockSpanClosingPatternString.repeat(depth)
     );

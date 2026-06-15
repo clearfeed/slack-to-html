@@ -215,6 +215,18 @@ describe('markdown', () => {
         'Double blockquote message\n<blockquote class="slack_block"> Line 1</blockquote>\n<blockquote class="slack_block"><blockquote class="slack_block"> Line 2</blockquote></blockquote>'
       )
     })
+
+    it('should cap nesting at two levels and keep deeper markers literal', () => {
+      escapeForSlackWithMarkdown('pre\n&gt;&gt;&gt; Line').should.equal(
+        'pre\n<blockquote class="slack_block"><blockquote class="slack_block">&gt; Line</blockquote></blockquote>'
+      )
+    })
+
+    it('should keep all extra markers literal beyond two levels', () => {
+      escapeForSlackWithMarkdown('pre\n&gt;&gt;&gt;&gt; Line').should.equal(
+        'pre\n<blockquote class="slack_block"><blockquote class="slack_block">&gt;&gt; Line</blockquote></blockquote>'
+      )
+    })
   })
 
   describe('leading whitespace', () => {
