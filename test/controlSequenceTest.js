@@ -118,11 +118,11 @@ describe('control sequences', () => {
 
     describe('unknown commands', () => {
       it('should render the label if present', () => {
-        escapeForSlack('<!foo|bar>').should.equal('<bar>')
+        escapeForSlack('<!foo|bar>').should.equal('&lt;bar&gt;')
       })
 
       it('should render as the literal if present', () => {
-        escapeForSlack('<!foo>').should.equal('<foo>')
+        escapeForSlack('<!foo>').should.equal('&lt;foo&gt;')
       })
     })
   })

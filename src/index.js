@@ -85,10 +85,8 @@ const channelMentionRegExp = XRegExp.cache(
   '<#(((?<channelID>C[^|>]+)(\\|(?<channelName>[^>]*))?)|(?<channelNameWithoutID>[^>]+))>',
   'ng'
 );
-const linkRegExp = XRegExp.cache(
-  '<(?<linkUrl>(https?|s3|ftp):[^|>]+)(\\|(?<linkHtml>[^>]+))?>',
-  'ng'
-);
+const linkPatternString = '<(?<linkUrl>(https?|s3|ftp):[^|>]+)(\\|(?<linkHtml>[^>]+))?>';
+const linkRegExp = XRegExp.cache(linkPatternString, 'ng');
 const mailToRegExp = XRegExp.cache(
   '<mailto:(?<mailTo>[^|>]+)(\\|(?<mailToName>[^>]+))?>',
   'ng'
@@ -106,6 +104,48 @@ const commandRegExp = XRegExp.cache(
   'ng'
 );
 const knownCommands = ['here', 'channel', 'group', 'everyone'];
+
+/**
+ * Slack guarantees the text it sends has `&`, `<` and `>` escaped. ClearFeed-authored
+ * mrkdwn (web app, web-chat, email, portal) does not, so a tag the author typed arrives
+ * raw and reaches the DOM as live markup.
+ *
+ * The three helpers below run in this order and converge both shapes on Slack's. On
+ * text that is already Slack-shaped they are no-ops:
+ *
+ *   1. escapeAngleBrackets  - escape the brackets that do not open a Slack entity
+ *   2. codeSpanOrLinkRegExp - stop a link inside code from becoming an anchor
+ *   3. encodeCodeContent    - make code content literal
+ */
+const htmlUnsafeCharToEntityMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
+const slackEntityToCharMap = { '&amp;': '&', '&lt;': '<', '&gt;': '>' };
+
+// Every entity the replacements in escapeForSlack understand: <@user>, <#channel>,
+// <!command> and <scheme:...> links. Anything else in brackets is the author's text.
+const entityOrAngleBracketRegExp = XRegExp.cache(
+  '(?<entity><(?:[@#!]|(?:https?|s3|ftp|mailto|tel):)[^>]*>)|(?<bracket>[<>])',
+  'ng'
+);
+
+// `&` is deliberately not escaped here: Slack-shaped text is full of `&lt;`/`&amp;`,
+// and re-escaping those would corrupt the path that already works.
+const escapeAngleBrackets = (text) =>
+  XRegExp.replace(text, entityOrAngleBracketRegExp, (match) =>
+    match.entity || htmlUnsafeCharToEntityMap[match.bracket]);
+
+// Code alternatives come first so a link inside code is matched as code and left alone:
+// link replacement runs before the code delimiters are processed.
+const codeSpanOrLinkRegExp = XRegExp.cache(
+  '```[\\s\\S]*?```|`[^`]*`|' + linkPatternString,
+  'ng'
+);
+
+// Slack sends code content escaped (`&lt;foo&gt;`), ClearFeed-authored mrkdwn holds it
+// raw (`<foo>`); one decode pass then a re-escape converges both on the same literal.
+const encodeCodeContent = (content) =>
+  content
+    .replace(/&(?:amp|lt|gt);/g, (entity) => slackEntityToCharMap[entity])
+    .replace(/[&<>]/g, (character) => htmlUnsafeCharToEntityMap[character]);
 
 const escapeTags = (string) =>
   ['&lt;', string.substring(1, string.length - 1), '&gt;'].join('');
@@ -199,6 +239,7 @@ const replaceInWindows = (
   const spacePadded = options.spacePadded;
   const asymmetric = options.endingPattern;
   const replaceNewlines = options.replaceNewlines;
+  const encodeContent = options.encodeContent;
   let maxReplacements = options.maxReplacements;
 
   const openingDelimiterRegExp = buildOpeningDelimiterRegExp(delimiterLiteral, {
@@ -318,13 +359,17 @@ const replaceInWindows = (
         );
       }
 
+      // Encode before the newline replacement so the <br> tags it inserts survive.
+      const encodedTextBetweenDelimiters = encodeContent
+        ? encodeCodeContent(textBetweenDelimiters)
+        : textBetweenDelimiters;
       const replacedTextBetweenDelimiters = replaceNewlines
         ? XRegExp.replace(
-          textBetweenDelimiters,
+          encodedTextBetweenDelimiters,
           newlineRegExp,
           lineBreakTagLiteral
         )
-        : textBetweenDelimiters;
+        : encodedTextBetweenDelimiters;
 
       const replacedDelimiterText = [
         openingReplacementString,
@@ -477,7 +522,7 @@ const expandText = (text, skipParagraphBreaks = false) => {
     codeDivOpeningPatternString + openingCodePatternString,
     closingCodePatternString + closingDivPatternString,
     expandedTextAndWindows.windows,
-    { partitionWindowOnMatch: true, replaceNewlines: true }
+    { partitionWindowOnMatch: true, replaceNewlines: true, encodeContent: true }
   );
   expandedTextAndWindows = replaceInWindows(
     expandedTextAndWindows.text,
@@ -485,7 +530,7 @@ const expandText = (text, skipParagraphBreaks = false) => {
     codeSpanOpeningPatternString + openingCodePatternString,
     closingCodePatternString + closingSpanPatternString,
     expandedTextAndWindows.windows,
-    { partitionWindowOnMatch: true }
+    { partitionWindowOnMatch: true, encodeContent: true }
   );
   expandedTextAndWindows = replaceInWindows(
     expandedTextAndWindows.text,
@@ -546,9 +591,12 @@ const escapeForSlack = (text, options = {}) => {
    * We use &#95; instead of _ in HTML attributes to prevent markdown processor from
    * matching them with markdown delimiters
   */
-  const textWithEncodedLink = XRegExp.replace(text || '',
-    linkRegExp,
+  const textWithEncodedLink = XRegExp.replace(escapeAngleBrackets(text || ''),
+    codeSpanOrLinkRegExp,
     (match) => {
+      if (!match.linkUrl) {
+        return match.toString();
+      }
       const encodedLink = encodeSlackMrkdwnCharactersInLinks(match.linkUrl);
       return `<a href="${encodedLink
         }" target="&#95;blank" rel="noopener noreferrer">${match.linkHtml || encodedLink
@@ -583,9 +631,9 @@ const escapeForSlack = (text, options = {}) => {
           } else if (knownCommands.includes(match.commandLiteral)) {
             return `@${match.commandLiteral}`;
           } else if (match.commandName) {
-            return `<${match.commandName}>`;
+            return escapeTags(`<${match.commandName}>`);
           }
-          return `<${match.commandLiteral}>`;
+          return escapeTags(`<${match.commandLiteral}>`);
         },
       ],
     ]),
