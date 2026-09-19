@@ -62,12 +62,12 @@ describe('code content', () => {
   })
 
   /**
-   * Slack resolves its own entities inside a code block - a mention still pings, a URL
-   * it wrapped is still clickable - because they address something rather than describe
-   * text. Escaping them would show the reader raw `<@U123>` / `<https://x|y>` markup,
-   * which is the same defect as an author-typed tag reaching the DOM.
+   * Making the author's text literal must not change how this renderer already handled
+   * Slack's own entities inside code. Escaping those too would have shown the reader raw
+   * `<@U123>` / `<https://x|y>` markup where a mention or link rendered before - the same
+   * defect as an author-typed tag reaching the DOM, introduced from the other side.
    */
-  describe('Slack entities still resolve inside code content', () => {
+  describe('preserves existing entity handling inside code content', () => {
     it('should resolve a user mention', () => {
       escapeForSlackWithMarkdown('```cc <@U123>```', options).should.equal(
         '<div class="slack_code"><code>cc <span class="user-mention">@ashish</span></code></div>'
