@@ -110,12 +110,19 @@ const knownCommands = ['here', 'channel', 'group', 'everyone'];
  * mrkdwn (web app, web-chat, email, portal) does not, so a tag the author typed arrives
  * raw and reaches the DOM as live markup.
  *
- * The three helpers below run in this order and converge both shapes on Slack's. On
- * text that is already Slack-shaped they are no-ops:
+ * The helpers below run in this order and converge both shapes on Slack's. On text that
+ * is already Slack-shaped they are no-ops:
  *
  *   1. escapeAngleBrackets  - escape the brackets that do not open a Slack entity
- *   2. codeSpanOrLinkRegExp - stop a link inside code from becoming an anchor
- *   3. encodeCodeContent    - make code content literal
+ *   2. codeSpanOrLinkRegExp - hold a link inside code back from becoming an anchor,
+ *                             until after the code content has been encoded
+ *   3. encodeCodeContent    - make the author's text inside code literal
+ *   4. the replaceEach pass - resolve the Slack entities that survived, including the
+ *                             links held back in step 2
+ *
+ * A Slack entity is never the author describing text: it addresses a user, group or
+ * channel, or carries a URL Slack itself wrapped. Slack resolves all of them inside a
+ * code block, so steps 1 and 3 keep them raw and step 4 renders them.
  */
 const htmlUnsafeCharToEntityMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
 const slackEntityToCharMap = { '&amp;': '&', '&lt;': '<', '&gt;': '>' };
@@ -142,10 +149,19 @@ const codeSpanOrLinkRegExp = XRegExp.cache(
 
 // Slack sends code content escaped (`&lt;foo&gt;`), ClearFeed-authored mrkdwn holds it
 // raw (`<foo>`); one decode pass then a re-escape converges both on the same literal.
+//
+// `&` is escaped unconditionally, before the brackets, so `&amp;lt;` - the author typing
+// the characters `&lt;` - survives as itself rather than decoding into a `<`. The
+// brackets are then escaped entity-aware, leaving Slack's own markup for the replaceEach
+// pass to resolve.
 const encodeCodeContent = (content) =>
-  content
-    .replace(/&(?:amp|lt|gt);/g, (entity) => slackEntityToCharMap[entity])
-    .replace(/[&<>]/g, (character) => htmlUnsafeCharToEntityMap[character]);
+  XRegExp.replace(
+    content
+      .replace(/&(?:amp|lt|gt);/g, (entity) => slackEntityToCharMap[entity])
+      .replace(/&/g, '&amp;'),
+    entityOrAngleBracketRegExp,
+    (match) => match.entity || htmlUnsafeCharToEntityMap[match.bracket]
+  );
 
 const escapeTags = (string) =>
   ['&lt;', string.substring(1, string.length - 1), '&gt;'].join('');
@@ -605,6 +621,19 @@ const escapeForSlack = (text, options = {}) => {
   const expandedText = markdown ? expandText(textWithEncodedLink, skipParagraphBreaks) : textWithEncodedLink;
   const processedText = expandEmoji(
     XRegExp.replaceEach(expandedText, [
+      /**
+       * Links inside code are held back during the first pass so the code delimiters
+       * can be found, and encodeCodeContent leaves them raw. Resolving them here - after
+       * the content around them is already escaped - is what keeps a URL in a code block
+       * clickable without the anchor itself being escaped.
+       */
+      [
+        linkRegExp,
+        (match) => {
+          const encodedLink = encodeSlackMrkdwnCharactersInLinks(match.linkUrl);
+          return `<a href="${encodedLink}" target="&#95;blank" rel="noopener noreferrer">${match.linkHtml || encodedLink}</a>`;
+        },
+      ],
       [userMentionRegExp, replaceUserName(users)],
       [channelMentionRegExp, replaceChannelName(channels)],
       [

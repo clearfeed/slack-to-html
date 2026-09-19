@@ -61,51 +61,75 @@ describe('code content', () => {
     })
   })
 
-  describe('no Slack parsing inside code content', () => {
-    it('should not resolve a user mention', () => {
+  /**
+   * Slack resolves its own entities inside a code block - a mention still pings, a URL
+   * it wrapped is still clickable - because they address something rather than describe
+   * text. Escaping them would show the reader raw `<@U123>` / `<https://x|y>` markup,
+   * which is the same defect as an author-typed tag reaching the DOM.
+   */
+  describe('Slack entities still resolve inside code content', () => {
+    it('should resolve a user mention', () => {
       escapeForSlackWithMarkdown('```cc <@U123>```', options).should.equal(
-        '<div class="slack_code"><code>cc &lt;@U123&gt;</code></div>'
+        '<div class="slack_code"><code>cc <span class="user-mention">@ashish</span></code></div>'
       )
     })
 
-    it('should not resolve a usergroup mention', () => {
+    it('should resolve a usergroup mention', () => {
       escapeForSlackWithMarkdown('```cc <!subteam^S123>```', options).should.equal(
-        '<div class="slack_code"><code>cc &lt;!subteam^S123&gt;</code></div>'
+        '<div class="slack_code"><code>cc @devs</code></div>'
       )
     })
 
-    it('should not resolve a channel mention', () => {
+    it('should resolve a channel mention', () => {
       escapeForSlackWithMarkdown('```see <#C123>```', options).should.equal(
-        '<div class="slack_code"><code>see &lt;#C123&gt;</code></div>'
+        '<div class="slack_code"><code>see #general</code></div>'
       )
     })
 
-    it('should not linkify a bare url', () => {
+    it('should linkify a bare url', () => {
       escapeForSlackWithMarkdown('```see <https://x.com>```').should.equal(
-        '<div class="slack_code"><code>see &lt;https://x.com&gt;</code></div>'
+        '<div class="slack_code"><code>see ' +
+        '<a href="https://x.com" target="&#95;blank" rel="noopener noreferrer">https://x.com</a>' +
+        '</code></div>'
       )
     })
 
-    it('should not linkify a labelled url', () => {
+    it('should linkify a labelled url', () => {
       escapeForSlackWithMarkdown('```see <https://x.com|docs>```').should.equal(
-        '<div class="slack_code"><code>see &lt;https://x.com|docs&gt;</code></div>'
+        '<div class="slack_code"><code>see ' +
+        '<a href="https://x.com" target="&#95;blank" rel="noopener noreferrer">docs</a>' +
+        '</code></div>'
       )
     })
 
-    it('should not linkify a url inside inline code', () => {
+    it('should linkify a url inside inline code', () => {
       escapeForSlackWithMarkdown('use `<https://x.com>` here').should.equal(
-        'use <span class="slack_code"><code>&lt;https://x.com&gt;</code></span> here'
+        'use <span class="slack_code"><code>' +
+        '<a href="https://x.com" target="&#95;blank" rel="noopener noreferrer">https://x.com</a>' +
+        '</code></span> here'
       )
     })
 
     /**
-     * The code delimiters match across newlines, so the shield applied during
-     * link replacement has to as well — otherwise the link is turned into an
-     * anchor first and then shown as literal markup inside the code span.
+     * The code delimiters match across newlines, so the shield applied during link
+     * replacement has to as well - otherwise the link becomes an anchor before the code
+     * content is encoded, and the anchor is escaped into literal markup.
      */
-    it('should not linkify a url inside inline code spanning newlines', () => {
+    it('should linkify a url inside inline code spanning newlines', () => {
       escapeForSlackWithMarkdown('`a\n<https://x.com>\nb`').should.equal(
-        '<span class="slack_code"><code>a\n&lt;https://x.com&gt;\nb</code></span>'
+        '<span class="slack_code"><code>a\n' +
+        '<a href="https://x.com" target="&#95;blank" rel="noopener noreferrer">https://x.com</a>' +
+        '\nb</code></span>'
+      )
+    })
+
+    /**
+     * An author-typed anchor is not a Slack entity, so it stays literal even though the
+     * resolved ones above are emitted as real markup.
+     */
+    it('should keep an author-typed anchor literal', () => {
+      escapeForSlackWithMarkdown('```<a href="http://x.com">y</a>```').should.equal(
+        '<div class="slack_code"><code>&lt;a href="http://x.com"&gt;y&lt;/a&gt;</code></div>'
       )
     })
 
