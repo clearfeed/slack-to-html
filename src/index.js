@@ -85,10 +85,8 @@ const channelMentionRegExp = XRegExp.cache(
   '<#(((?<channelID>C[^|>]+)(\\|(?<channelName>[^>]*))?)|(?<channelNameWithoutID>[^>]+))>',
   'ng'
 );
-const linkRegExp = XRegExp.cache(
-  '<(?<linkUrl>(https?|s3|ftp):[^|>]+)(\\|(?<linkHtml>[^>]+))?>',
-  'ng'
-);
+const linkPatternString = '<(?<linkUrl>(https?|s3|ftp):[^|>]+)(\\|(?<linkHtml>[^>]+))?>';
+const linkRegExp = XRegExp.cache(linkPatternString, 'ng');
 const mailToRegExp = XRegExp.cache(
   '<mailto:(?<mailTo>[^|>]+)(\\|(?<mailToName>[^>]+))?>',
   'ng'
@@ -106,6 +104,62 @@ const commandRegExp = XRegExp.cache(
   'ng'
 );
 const knownCommands = ['here', 'channel', 'group', 'everyone'];
+
+/**
+ * Slack guarantees the text it sends has `&`, `<` and `>` escaped. ClearFeed-authored
+ * mrkdwn (web app, web-chat, email, portal) does not, so a tag the author typed arrives
+ * raw and reaches the DOM as live markup. The helpers below converge both shapes, and
+ * are no-ops on text that is already Slack-shaped:
+ *
+ *   1. escapeAngleBrackets  - escape the brackets that do not open a Slack entity
+ *   2. codeSpanOrLinkRegExp - hold a link inside code back from becoming an anchor,
+ *                             until after the code content has been encoded
+ *   3. encodeCodeContent    - make the author's text inside code literal
+ *   4. the replaceEach pass - resolve the Slack entities that survived, including the
+ *                             links held back in step 2
+ *
+ * Steps 1 and 3 keep Slack entities raw for step 4 to render. That preserves this
+ * renderer's existing handling of entities inside code, so escaping the author's text
+ * does not quietly change how a mention or link in a code block already rendered.
+ */
+const htmlUnsafeCharToEntityMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;' };
+const slackEntityToCharMap = { '&amp;': '&', '&lt;': '<', '&gt;': '>' };
+
+// Every entity the replacements in escapeForSlack understand: <@user>, <#channel>,
+// <!command> and <scheme:...> links. Anything else in brackets is the author's text.
+const entityOrAngleBracketRegExp = XRegExp.cache(
+  '(?<entity><(?:[@#!]|(?:https?|s3|ftp|mailto|tel):)[^>]*>)|(?<bracket>[<>])',
+  'ng'
+);
+
+// `&` is deliberately not escaped here: Slack-shaped text is full of `&lt;`/`&amp;`,
+// and re-escaping those would corrupt the path that already works.
+const escapeAngleBrackets = (text) =>
+  XRegExp.replace(text, entityOrAngleBracketRegExp, (match) =>
+    match.entity || htmlUnsafeCharToEntityMap[match.bracket]);
+
+// Code alternatives come first so a link inside code is matched as code and left alone:
+// link replacement runs before the code delimiters are processed.
+const codeSpanOrLinkRegExp = XRegExp.cache(
+  '```[\\s\\S]*?```|`[^`]*`|' + linkPatternString,
+  'ng'
+);
+
+// Slack sends code content escaped (`&lt;foo&gt;`), ClearFeed-authored mrkdwn holds it
+// raw (`<foo>`); one decode pass then a re-escape converges both on the same literal.
+//
+// `&` is escaped unconditionally, before the brackets, so `&amp;lt;` - the author typing
+// the characters `&lt;` - survives as itself rather than decoding into a `<`. The
+// brackets are then escaped entity-aware, leaving Slack's own markup for the replaceEach
+// pass to resolve.
+const encodeCodeContent = (content) =>
+  XRegExp.replace(
+    content
+      .replace(/&(?:amp|lt|gt);/g, (entity) => slackEntityToCharMap[entity])
+      .replace(/&/g, '&amp;'),
+    entityOrAngleBracketRegExp,
+    (match) => match.entity || htmlUnsafeCharToEntityMap[match.bracket]
+  );
 
 const escapeTags = (string) =>
   ['&lt;', string.substring(1, string.length - 1), '&gt;'].join('');
@@ -199,6 +253,7 @@ const replaceInWindows = (
   const spacePadded = options.spacePadded;
   const asymmetric = options.endingPattern;
   const replaceNewlines = options.replaceNewlines;
+  const encodeContent = options.encodeContent;
   let maxReplacements = options.maxReplacements;
 
   const openingDelimiterRegExp = buildOpeningDelimiterRegExp(delimiterLiteral, {
@@ -318,13 +373,17 @@ const replaceInWindows = (
         );
       }
 
+      // Encode before the newline replacement so the <br> tags it inserts survive.
+      const encodedTextBetweenDelimiters = encodeContent
+        ? encodeCodeContent(textBetweenDelimiters)
+        : textBetweenDelimiters;
       const replacedTextBetweenDelimiters = replaceNewlines
         ? XRegExp.replace(
-          textBetweenDelimiters,
+          encodedTextBetweenDelimiters,
           newlineRegExp,
           lineBreakTagLiteral
         )
-        : textBetweenDelimiters;
+        : encodedTextBetweenDelimiters;
 
       const replacedDelimiterText = [
         openingReplacementString,
@@ -477,7 +536,7 @@ const expandText = (text, skipParagraphBreaks = false) => {
     codeDivOpeningPatternString + openingCodePatternString,
     closingCodePatternString + closingDivPatternString,
     expandedTextAndWindows.windows,
-    { partitionWindowOnMatch: true, replaceNewlines: true }
+    { partitionWindowOnMatch: true, replaceNewlines: true, encodeContent: true }
   );
   expandedTextAndWindows = replaceInWindows(
     expandedTextAndWindows.text,
@@ -485,7 +544,7 @@ const expandText = (text, skipParagraphBreaks = false) => {
     codeSpanOpeningPatternString + openingCodePatternString,
     closingCodePatternString + closingSpanPatternString,
     expandedTextAndWindows.windows,
-    { partitionWindowOnMatch: true }
+    { partitionWindowOnMatch: true, encodeContent: true }
   );
   expandedTextAndWindows = replaceInWindows(
     expandedTextAndWindows.text,
@@ -531,6 +590,12 @@ const expandText = (text, skipParagraphBreaks = false) => {
 };
 
 const encodeSlackMrkdwnCharactersInLinks = (link) => XRegExp.replace(link, slackMrkdwnCharactersRegExp, (match) => slackMrkdwnPercentageCharsMap[match.mrkdwnCharacter] || match.mrkdwnCharacter);
+
+const replaceLink = (match) => {
+  const encodedLink = encodeSlackMrkdwnCharactersInLinks(match.linkUrl);
+  return `<a href="${encodedLink}" target="&#95;blank" rel="noopener noreferrer">${match.linkHtml || encodedLink
+    }</a>`;
+};
 const escapeForSlack = (text, options = {}) => {
   const customEmoji = options.customEmoji || {};
   const users = options.users || {};
@@ -546,17 +611,24 @@ const escapeForSlack = (text, options = {}) => {
    * We use &#95; instead of _ in HTML attributes to prevent markdown processor from
    * matching them with markdown delimiters
   */
-  const textWithEncodedLink = XRegExp.replace(text || '',
-    linkRegExp,
+  const textWithEncodedLink = XRegExp.replace(escapeAngleBrackets(text || ''),
+    codeSpanOrLinkRegExp,
     (match) => {
-      const encodedLink = encodeSlackMrkdwnCharactersInLinks(match.linkUrl);
-      return `<a href="${encodedLink
-        }" target="&#95;blank" rel="noopener noreferrer">${match.linkHtml || encodedLink
-        }</a>`;
+      if (!match.linkUrl) {
+        return match.toString();
+      }
+      return replaceLink(match);
     });
   const expandedText = markdown ? expandText(textWithEncodedLink, skipParagraphBreaks) : textWithEncodedLink;
   const processedText = expandEmoji(
     XRegExp.replaceEach(expandedText, [
+      /**
+       * Links inside code are held back during the first pass so the code delimiters can
+       * be found, and encodeCodeContent leaves them raw. Resolving them here - after the
+       * content around them is escaped - keeps a URL in a code block rendering as it did
+       * before, without the anchor itself being escaped.
+       */
+      [linkRegExp, replaceLink],
       [userMentionRegExp, replaceUserName(users)],
       [channelMentionRegExp, replaceChannelName(channels)],
       [
@@ -583,9 +655,9 @@ const escapeForSlack = (text, options = {}) => {
           } else if (knownCommands.includes(match.commandLiteral)) {
             return `@${match.commandLiteral}`;
           } else if (match.commandName) {
-            return `<${match.commandName}>`;
+            return escapeTags(`<${match.commandName}>`);
           }
-          return `<${match.commandLiteral}>`;
+          return escapeTags(`<${match.commandLiteral}>`);
         },
       ],
     ]),
