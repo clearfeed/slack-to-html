@@ -49,7 +49,7 @@ const closingPrePatternString = '</pre>';
 // For <pre> output we restore real newlines once every other pass is done.
 const preCodeBlockRegExp = XRegExp.cache('<pre><code>(?<code>.*?)</code></pre>', 'sg');
 const lineBreakTagRegExp = XRegExp.cache('<br>', 'g');
-const edgeNewlinesRegExp = XRegExp.cache('^\\n+|\\n+$', 'g');
+const edgeNewlinesRegExp = XRegExp.cache('^\\n|\\n$', 'g');
 const boldOpeningPatternString = '<strong class="slack_bold">';
 const boldClosingPatternString = '</strong>';
 const strikethroughOpeningPatternString = '<s class="slack_strikethrough">';
@@ -63,7 +63,7 @@ const paragraphBreak = XRegExp.cache('\\n\\n', 'nsg');
 const paragraphBreakTagLiteral = '<div class="slack_line_break"></div>';
 const lineBreakTagLiteral = '<br>';
 const newlineRegExp = XRegExp.cache('\\n', 'nsg');
-// Drop <br> tags adjacent to a block element (blockquote / div) to avoid a
+// Drop <br> tags adjacent to a block element (blockquote / div / pre) to avoid a
 // spurious blank line, since the block already starts on its own line.
 const brBeforeBlockRegExp = XRegExp.cache('<br>(<blockquote|<div|<pre)(?=\\s|>)', 'g');
 const brAfterBlockRegExp = XRegExp.cache('(</blockquote>|</div>|</pre>)<br>', 'g');
@@ -550,7 +550,7 @@ const restorePreCodeBlockNewlines = (text) =>
     return `${openingPrePatternString}${openingCodePatternString}${code}${closingCodePatternString}${closingPrePatternString}`;
   });
 
-const encodeSlackMrkdwnCharactersInLinks =(link) => XRegExp.replace(link, slackMrkdwnCharactersRegExp, (match) => slackMrkdwnPercentageCharsMap[match.mrkdwnCharacter] || match.mrkdwnCharacter);
+const encodeSlackMrkdwnCharactersInLinks = (link) => XRegExp.replace(link, slackMrkdwnCharactersRegExp, (match) => slackMrkdwnPercentageCharsMap[match.mrkdwnCharacter] || match.mrkdwnCharacter);
 const escapeForSlack = (text, options = {}) => {
   const customEmoji = options.customEmoji || {};
   const users = options.users || {};
@@ -647,8 +647,8 @@ const escapeForSlack = (text, options = {}) => {
  *   When false, double newlines are converted to <div class="slack_line_break"></div>.
  * @property {boolean} [convertNewlinesToBr=false] - Whether to convert newline characters to <br> tags.
  *   When true, newline characters are converted to <br> tags, except those
- *   directly adjacent to a block-level element the library emits (blockquote or
- *   div), since those blocks already break the line and a <br> would add a
+ *   directly adjacent to a block-level element the library emits (blockquote,
+ *   div or pre), since those blocks already break the line and a <br> would add a
  *   spurious blank line.
  *   When false, all newline characters are preserved as-is.
  *   Useful for systems like Intercom that don't respect plain newline characters in HTML.

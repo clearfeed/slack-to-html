@@ -295,6 +295,12 @@ describe('markdown', () => {
       )
     })
 
+    it('should trim only the fence newline and keep extra blank lines at the edges', () => {
+      escapeForSlackWithMarkdown('```\n\n\ncode\n\n```', { preformattedCodeBlocks: true }).should.equal(
+        '<pre><code>\n\ncode\n</code></pre>'
+      )
+    })
+
     it('should keep blank lines, blockquote markers and markdown inside the block as text', () => {
       escapeForSlackWithMarkdown('```a\n\n&gt; b *c*```', { preformattedCodeBlocks: true }).should.equal(
         '<pre><code>a\n\n&gt; b *c*</code></pre>'
