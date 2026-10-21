@@ -57,7 +57,8 @@ function processEmojiData() {
 }
 
 // Main execution
-downloadEmojiData()
+// Release builds use the reviewed, committed emoji data instead of fetching new input.
+(process.env.SLACK_TO_HTML_OFFLINE_EMOJI === '1' ? Promise.resolve() : downloadEmojiData())
   .then(function() {
     // Clear the require cache to load fresh data
     delete require.cache[require.resolve(EMOJI_CONFIG_PATH)];

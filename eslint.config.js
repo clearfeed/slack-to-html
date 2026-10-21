@@ -25,7 +25,7 @@ module.exports = [
         },
     },
     {
-        files: ['*.js'],
+        files: ['*.js', '.github/scripts/**/*.cjs'],
         languageOptions: {
             sourceType: 'commonjs',
             globals: {
