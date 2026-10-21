@@ -42,6 +42,14 @@ const codeDivOpeningPatternString = '<div class="slack_code">';
 const codeSpanOpeningPatternString = '<span class="slack_code">';
 const openingCodePatternString = '<code>';
 const closingCodePatternString = '</code>';
+const openingPrePatternString = '<pre>';
+const closingPrePatternString = '</pre>';
+// Code block lines are joined with <br> during expansion so the later
+// line-based passes (blockquotes, indentation, paragraph breaks) never see them.
+// For <pre> output we restore real newlines once every other pass is done.
+const preCodeBlockRegExp = XRegExp.cache('<pre><code>(?<code>.*?)</code></pre>', 'sg');
+const lineBreakTagRegExp = XRegExp.cache('<br>', 'g');
+const edgeNewlinesRegExp = XRegExp.cache('^\\n|\\n$', 'g');
 const boldOpeningPatternString = '<strong class="slack_bold">';
 const boldClosingPatternString = '</strong>';
 const strikethroughOpeningPatternString = '<s class="slack_strikethrough">';
@@ -55,10 +63,10 @@ const paragraphBreak = XRegExp.cache('\\n\\n', 'nsg');
 const paragraphBreakTagLiteral = '<div class="slack_line_break"></div>';
 const lineBreakTagLiteral = '<br>';
 const newlineRegExp = XRegExp.cache('\\n', 'nsg');
-// Drop <br> tags adjacent to a block element (blockquote / div) to avoid a
+// Drop <br> tags adjacent to a block element (blockquote / div / pre) to avoid a
 // spurious blank line, since the block already starts on its own line.
-const brBeforeBlockRegExp = XRegExp.cache('<br>(<blockquote|<div)(?=\\s|>)', 'g');
-const brAfterBlockRegExp = XRegExp.cache('(</blockquote>|</div>)<br>', 'g');
+const brBeforeBlockRegExp = XRegExp.cache('<br>(<blockquote|<div|<pre)(?=\\s|>)', 'g');
+const brAfterBlockRegExp = XRegExp.cache('(</blockquote>|</div>|</pre>)<br>', 'g');
 const nonBreakingSpaceLiteral = '&nbsp;';
 const tabWidth = 4;
 const leadingWhitespaceRegExp = XRegExp.cache('^[ \\t]+', 'n');
@@ -468,14 +476,16 @@ const preserveLeadingWhitespace = (text) =>
     return prefix + toNonBreakingSpaces(indentMatch[0]) + remainder.slice(indentMatch[0].length);
   });
 
-const expandText = (text, skipParagraphBreaks = false) => {
+const expandText = (text, { skipParagraphBreaks = false, preformattedCodeBlocks = false } = {}) => {
   let expandedTextAndWindows;
   expandedTextAndWindows = { text: text, windows: [[0, text.length]] };
   expandedTextAndWindows = replaceInWindows(
     expandedTextAndWindows.text,
     '```',
-    codeDivOpeningPatternString + openingCodePatternString,
-    closingCodePatternString + closingDivPatternString,
+    (preformattedCodeBlocks ? openingPrePatternString : codeDivOpeningPatternString) +
+      openingCodePatternString,
+    closingCodePatternString +
+      (preformattedCodeBlocks ? closingPrePatternString : closingDivPatternString),
     expandedTextAndWindows.windows,
     { partitionWindowOnMatch: true, replaceNewlines: true }
   );
@@ -530,6 +540,16 @@ const expandText = (text, skipParagraphBreaks = false) => {
   return skipParagraphBreaks ? processedText : replaceParagraphBreaks(processedText);
 };
 
+const restorePreCodeBlockNewlines = (text) =>
+  XRegExp.replace(text, preCodeBlockRegExp, (match) => {
+    const code = XRegExp.replace(
+      XRegExp.replace(match.code, lineBreakTagRegExp, '\n'),
+      edgeNewlinesRegExp,
+      ''
+    );
+    return `${openingPrePatternString}${openingCodePatternString}${code}${closingCodePatternString}${closingPrePatternString}`;
+  });
+
 const encodeSlackMrkdwnCharactersInLinks = (link) => XRegExp.replace(link, slackMrkdwnCharactersRegExp, (match) => slackMrkdwnPercentageCharsMap[match.mrkdwnCharacter] || match.mrkdwnCharacter);
 const escapeForSlack = (text, options = {}) => {
   const customEmoji = options.customEmoji || {};
@@ -540,6 +560,7 @@ const escapeForSlack = (text, options = {}) => {
   const skipEmojiSpans = options.skipEmojiSpans || false;
   const skipParagraphBreaks = options.skipParagraphBreaks || false;
   const convertNewlinesToBr = options.convertNewlinesToBr || false;
+  const preformattedCodeBlocks = options.preformattedCodeBlocks || false;
   /**
    * Links can contain characters such as *_&~` that are a part of the character set used by
    * Slack Mrkdwn. So, before converting Slack Mrkdwn to HTML we need to encode these characters
@@ -554,7 +575,9 @@ const escapeForSlack = (text, options = {}) => {
         }" target="&#95;blank" rel="noopener noreferrer">${match.linkHtml || encodedLink
         }</a>`;
     });
-  const expandedText = markdown ? expandText(textWithEncodedLink, skipParagraphBreaks) : textWithEncodedLink;
+  const expandedText = markdown
+    ? expandText(textWithEncodedLink, { skipParagraphBreaks, preformattedCodeBlocks })
+    : textWithEncodedLink;
   const processedText = expandEmoji(
     XRegExp.replaceEach(expandedText, [
       [userMentionRegExp, replaceUserName(users)],
@@ -593,15 +616,16 @@ const escapeForSlack = (text, options = {}) => {
     skipEmojiSpans
   );
 
-  if (!convertNewlinesToBr) {
-    return processedText;
+  let html = processedText;
+  if (convertNewlinesToBr) {
+    // Convert newlines to <br>, then drop the ones adjacent to block-level tags
+    // (blockquote / div / pre) — those blocks already break the line, so a <br> there
+    // would render a spurious blank line (e.g. between consecutive blockquotes).
+    const textWithLineBreaks = XRegExp.replace(html, newlineRegExp, lineBreakTagLiteral);
+    const withoutBrBeforeBlock = XRegExp.replace(textWithLineBreaks, brBeforeBlockRegExp, '$1');
+    html = XRegExp.replace(withoutBrBeforeBlock, brAfterBlockRegExp, '$1');
   }
-  // Convert newlines to <br>, then drop the ones adjacent to block-level tags
-  // (blockquote / div) — those blocks already break the line, so a <br> there
-  // would render a spurious blank line (e.g. between consecutive blockquotes).
-  const textWithLineBreaks = XRegExp.replace(processedText, newlineRegExp, lineBreakTagLiteral);
-  const withoutBrBeforeBlock = XRegExp.replace(textWithLineBreaks, brBeforeBlockRegExp, '$1');
-  return XRegExp.replace(withoutBrBeforeBlock, brAfterBlockRegExp, '$1');
+  return preformattedCodeBlocks ? restorePreCodeBlockNewlines(html) : html;
 };
 
 /**
@@ -623,11 +647,18 @@ const escapeForSlack = (text, options = {}) => {
  *   When false, double newlines are converted to <div class="slack_line_break"></div>.
  * @property {boolean} [convertNewlinesToBr=false] - Whether to convert newline characters to <br> tags.
  *   When true, newline characters are converted to <br> tags, except those
- *   directly adjacent to a block-level element the library emits (blockquote or
- *   div), since those blocks already break the line and a <br> would add a
+ *   directly adjacent to a block-level element the library emits (blockquote,
+ *   div or pre), since those blocks already break the line and a <br> would add a
  *   spurious blank line.
  *   When false, all newline characters are preserved as-is.
  *   Useful for systems like Intercom that don't respect plain newline characters in HTML.
+ * @property {boolean} [preformattedCodeBlocks=false] - Whether to render code blocks as <pre> elements.
+ *   When true, ```code block``` → <pre><code>code block</code></pre>, with lines separated by
+ *   newline characters and the blank first/last lines from the fences trimmed.
+ *   When false, code blocks render as <div class="slack_code"><code>…</code></div> with lines
+ *   separated by <br>.
+ *   Useful for systems like Zendesk that treat <code> as inline code and need <pre> for a
+ *   multiline block.
  * Converts Slack-formatted text to HTML with markdown parsing enabled.
  *
  * It processes Slack's mrkdwn formatting (bold, italic, strikethrough,

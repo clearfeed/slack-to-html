@@ -282,6 +282,45 @@ describe('markdown', () => {
     })
   })
 
+  describe('preformattedCodeBlocks', () => {
+    it('should render a code block as a pre element with newlines', () => {
+      escapeForSlackWithMarkdown('```line 1\n  line 2```', { preformattedCodeBlocks: true }).should.equal(
+        '<pre><code>line 1\n  line 2</code></pre>'
+      )
+    })
+
+    it('should trim the blank lines left by fences on their own lines', () => {
+      escapeForSlackWithMarkdown('before\n```\nline 1\nline 2\n```\nafter', { preformattedCodeBlocks: true }).should.equal(
+        'before\n<pre><code>line 1\nline 2</code></pre>\nafter'
+      )
+    })
+
+    it('should trim only the fence newline and keep extra blank lines at the edges', () => {
+      escapeForSlackWithMarkdown('```\n\n\ncode\n\n```', { preformattedCodeBlocks: true }).should.equal(
+        '<pre><code>\n\ncode\n</code></pre>'
+      )
+    })
+
+    it('should keep blank lines, blockquote markers and markdown inside the block as text', () => {
+      escapeForSlackWithMarkdown('```a\n\n&gt; b *c*```', { preformattedCodeBlocks: true }).should.equal(
+        '<pre><code>a\n\n&gt; b *c*</code></pre>'
+      )
+    })
+
+    it('should leave inline code unchanged', () => {
+      escapeForSlackWithMarkdown('`inline`', { preformattedCodeBlocks: true }).should.equal(
+        '<span class="slack_code"><code>inline</code></span>'
+      )
+    })
+
+    it('should keep newlines inside the block when combined with convertNewlinesToBr', () => {
+      escapeForSlackWithMarkdown('before\n```a\nb```\nafter', {
+        preformattedCodeBlocks: true,
+        convertNewlinesToBr: true
+      }).should.equal('before<pre><code>a\nb</code></pre>after')
+    })
+  })
+
   describe('URL links', () => {
     it('should convert S3 URLs to clickable links', () => {
       escapeForSlackWithMarkdown(
